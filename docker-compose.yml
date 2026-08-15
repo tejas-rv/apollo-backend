@@ -1,0 +1,16 @@
+# Local development only — spins up a free Postgres instance.
+# Run: docker compose up -d
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: apollo
+      POSTGRES_USER: apollo
+      POSTGRES_PASSWORD: apollo
+    ports:
+      - "5432:5432"
+    volumes:
+      - apollo_pg_data:/var/lib/postgresql/data
+
+volumes:
+  apollo_pg_data:
