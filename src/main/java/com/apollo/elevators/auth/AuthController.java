@@ -7,14 +7,13 @@ import com.apollo.elevators.security.JwtService;
 import com.apollo.elevators.security.SecurityConfigService;
 import com.apollo.elevators.service.PasswordResetService;
 import com.apollo.elevators.user.User;
-import com.apollo.elevators.user.UserRepository;
+import com.apollo.elevators.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController

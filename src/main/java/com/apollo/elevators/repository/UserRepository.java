@@ -1,5 +1,6 @@
-package com.apollo.elevators.user;
+package com.apollo.elevators.repository;
 
+import com.apollo.elevators.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

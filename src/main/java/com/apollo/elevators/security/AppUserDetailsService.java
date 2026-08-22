@@ -1,7 +1,7 @@
 package com.apollo.elevators.security;
 
 import com.apollo.elevators.user.User;
-import com.apollo.elevators.user.UserRepository;
+import com.apollo.elevators.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

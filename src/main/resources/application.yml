@@ -3,17 +3,13 @@ spring:
     name: apollo-elevators-backend
 
   datasource:
-    # DB connection creds themselves can't live inside the DB they connect to —
-    # these come from environment variables (set on Render/Railway, or a local
-    # .env / docker-compose for dev). Only app-level secrets (JWT key etc.)
-    # are DB-stored — see system_secret table.
-    url: ${DB_URL:jdbc:postgresql://ep-ancient-voice-azj0gtoq.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require}
-    username: ${DB_USERNAME:neondb_owner}
-    password: ${DB_PASSWORD:npg_rHYNEfMT3P5a}
+    url: jdbc:postgresql://ep-ancient-voice-azj0gtoq.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+    username: neondb_owner
+    password: npg_FU5hYwtveqo3
 
   jpa:
     hibernate:
-      ddl-auto: validate   # Flyway owns schema changes, not Hibernate
+      ddl-auto: validate
     open-in-view: false
     properties:
       hibernate:
@@ -24,14 +20,24 @@ spring:
     locations: classpath:db/migration
 
 server:
-  port: ${PORT:8080}
+  port: 8080
 
 app:
-  # Master key used ONLY to encrypt/decrypt values in system_secret.
-  # Generate with: openssl rand -base64 32
-  # Set as an environment variable in your deployment — NEVER commit a real value here.
-  master-key: ${APP_MASTER_KEY:iXYPQftcide0XlqLzyN4ccWbMaw/AxsodHjMNIwn7O4=}
+  master-key: iXYPQftcide0XlqLzyN4ccWbMaw/AxsodHjMNIwn7O4=
 
 logging:
   level:
     com.apollo.elevators: INFO
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+
+  swagger-ui:
+    path: /swagger-ui.html
+    display-request-duration: true
+    operations-sorter: method
+    tags-sorter: alpha
+
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json

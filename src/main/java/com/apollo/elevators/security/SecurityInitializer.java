@@ -2,7 +2,7 @@ package com.apollo.elevators.security;
 
 import com.apollo.elevators.common.Role;
 import com.apollo.elevators.user.User;
-import com.apollo.elevators.user.UserRepository;
+import com.apollo.elevators.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
