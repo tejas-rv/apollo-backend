@@ -1,9 +1,10 @@
 package com.apollo.elevators.service;
 
+import com.apollo.elevators.common.exception.ResourceNotFoundException;
 import com.apollo.elevators.user.User;
 import com.apollo.elevators.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,15 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class PasswordResetService {
 
     private final UserRepository userRepository;
-
-    private final BCryptPasswordEncoder passwordEncoder =
-            new BCryptPasswordEncoder();
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public void resetPassword(String username, String newPassword) {
 
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
 
         String encodedPassword = passwordEncoder.encode(newPassword);
 

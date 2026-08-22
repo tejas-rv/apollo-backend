@@ -1,3 +1,5 @@
+import java.io.File
+
 plugins {
     java
     id("org.springframework.boot") version "4.1.0"
@@ -14,6 +16,15 @@ java {
     }
 }
 
+val externalBuildDirectory = System.getenv("APOLLO_BUILD_DIR")
+    ?: System.getenv("LOCALAPPDATA")?.let {
+        "$it\\ApolloElevators\\gradle-build\\${rootProject.name}"
+    }
+
+if (!externalBuildDirectory.isNullOrBlank()) {
+    layout.buildDirectory.set(File(externalBuildDirectory))
+}
+
 repositories {
     mavenCentral()
 }
@@ -23,6 +34,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
 
     // Security
     implementation("org.springframework.boot:spring-boot-starter-security")
@@ -42,6 +54,7 @@ dependencies {
     // Boilerplate reduction
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
     // Swagger
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")

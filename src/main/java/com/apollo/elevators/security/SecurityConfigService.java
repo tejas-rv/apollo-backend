@@ -20,6 +20,7 @@ public class SecurityConfigService {
 
     public static final String KEY_JWT_SECRET = "jwt.secret";
     public static final String KEY_JWT_EXPIRATION_MS = "jwt.expiration-ms";
+    public static final String KEY_JWT_REFRESH_EXPIRATION_MS = "jwt.refresh-expiration-ms";
     public static final String KEY_JWT_ISSUER = "jwt.issuer";
 
     private final SystemSecretRepository systemSecretRepository;
@@ -51,6 +52,10 @@ public class SecurityConfigService {
 
     public long getJwtExpirationMs() {
         return Long.parseLong(get(KEY_JWT_EXPIRATION_MS));
+    }
+
+    public long getJwtRefreshExpirationMs() {
+        return Long.parseLong(get(KEY_JWT_REFRESH_EXPIRATION_MS));
     }
 
     public String getJwtIssuer() {

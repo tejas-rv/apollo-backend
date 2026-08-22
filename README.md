@@ -64,8 +64,32 @@ before going further.
      -H "Content-Type: application/json" \
      -d '{"username":"admin","password":"<printed password>"}'
    ```
-   Returns a JWT — use it as `Authorization: Bearer <token>` on subsequent
-   requests to `/api/admin/**` or `/api/engineer/**`.
+   Returns an access token plus a refresh token. Use the access token as
+   `Authorization: Bearer <token>` on subsequent requests to `/api/admin/**`
+   or `/api/engineer/**`.
+
+## Auth endpoints available now
+
+- `POST /api/auth/login` — returns access + refresh tokens
+- `POST /api/auth/refresh` — rotates the refresh token and returns a fresh pair
+- `GET /api/auth/me` — returns the current authenticated user
+- `POST /api/auth/reset-password` — ADMIN-only password reset
+
+## WhatsApp notification config
+
+The backend now includes an admin-only WhatsApp send endpoint backed by the
+Meta WhatsApp Cloud API:
+
+- `POST /api/admin/notifications/whatsapp`
+
+Set these environment variables before using it:
+
+```bash
+export WHATSAPP_ENABLED=true
+export WHATSAPP_PHONE_NUMBER_ID="<meta phone number id>"
+export WHATSAPP_ACCESS_TOKEN="<meta permanent access token>"
+export WHATSAPP_API_VERSION="v20.0"
+```
 
 ## Rotating the JWT secret later
 
@@ -82,16 +106,18 @@ validating, so this effectively logs everyone out. Plan rotations accordingly.
 
 - Add `APP_MASTER_KEY`, `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` as environment
   variables in the platform's dashboard — not in any file you commit.
+- Add `WHATSAPP_ENABLED`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`,
+  and optionally `WHATSAPP_API_VERSION` when enabling WhatsApp delivery.
 - Point `DB_URL` at your free Postgres instance (Supabase/Neon/Render Postgres).
-- Flyway runs the migration in `db/migration/V1__init_schema.sql`
-  automatically on startup.
+- Flyway runs the migrations in `db/migration/` automatically on startup.
 
-## What's next (not yet built)
+## What's next
 
-- `/api/admin/**` business endpoints: Customer, Elevator, AMC, Billing,
-  Modernization, QC checklist, Scheduling (per the earlier project guide).
-- `/api/engineer/**` endpoints: assigned visits, QC submission.
-- Password change / user management endpoints (currently only seed logic
-  exists — build this before this ever sees production data).
+- `/api/admin/**` business endpoints: Elevator, AMC, Billing, Modernization,
+  QC checklist, Scheduling, and reporting flows from the earlier project guide.
+- `/api/engineer/**` endpoints: assigned visits, QC submission, and job status
+  updates.
 - Role-based row-level restrictions (e.g. an ENGINEER should only see their
-  own assigned visits) — currently role checks are path-level only.
+  own assigned visits).
+- Additional notification channels (email/SMS) on top of the new notification
+  log and WhatsApp foundation.

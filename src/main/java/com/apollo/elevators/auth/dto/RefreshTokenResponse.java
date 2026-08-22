@@ -1,9 +1,7 @@
 package com.apollo.elevators.auth.dto;
 
-public record LoginResponse(
+public record RefreshTokenResponse(
         String accessToken,
         String refreshToken,
-        String username,
-        String role,
         long expiresInMs
 ) {}

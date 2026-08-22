@@ -14,6 +14,7 @@ public class SecretSeeder {
         return args -> {
             save(repo, aes, "jwt.secret", "some-long-random-jwt-signing-secret-min-32-bytes");
             save(repo, aes, "jwt.expiration-ms", "3600000"); // 1 hour
+            save(repo, aes, "jwt.refresh-expiration-ms", "2592000000"); // 30 days
             save(repo, aes, "jwt.issuer", "apollo-elevators");
             System.out.println("Secrets seeded.");
         };

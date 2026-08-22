@@ -1,5 +1,7 @@
 package com.apollo.elevators.service;
 
+import com.apollo.elevators.common.exception.ConflictException;
+import com.apollo.elevators.common.exception.ResourceNotFoundException;
 import com.apollo.elevators.customer.Customer;
 import com.apollo.elevators.dto.LiftCustomerDetails;
 import com.apollo.elevators.repository.CustomerRepository;
@@ -26,7 +28,7 @@ public class CustomerService {
         if (customerRepository.existsByCustomerCode(
                 request.getCustomerCode())) {
 
-            throw new IllegalArgumentException(
+            throw new ConflictException(
                     "Customer code already exists: "
                             + request.getCustomerCode()
             );
@@ -124,10 +126,9 @@ public class CustomerService {
             customerRepository.flush();
         } catch (DataIntegrityViolationException e) {
 
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "Customer cannot be deleted because it is associated "
-                            + "with other records.",
-                    e
+                            + "with other records."
             );
         }
     }
@@ -140,7 +141,7 @@ public class CustomerService {
         return customerRepository
                 .findById(id)
                 .orElseThrow(() ->
-                        new IllegalArgumentException(
+                        new ResourceNotFoundException(
                                 "Customer not found with id: " + id
                         )
                 );

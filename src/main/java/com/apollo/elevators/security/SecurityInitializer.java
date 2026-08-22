@@ -38,6 +38,7 @@ public class SecurityInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         ensureSecret(SecurityConfigService.KEY_JWT_SECRET, this::generateRandomSecret, "HMAC signing key for JWTs");
         ensureSecret(SecurityConfigService.KEY_JWT_EXPIRATION_MS, () -> "86400000", "JWT expiry in ms (default 24h)");
+        ensureSecret(SecurityConfigService.KEY_JWT_REFRESH_EXPIRATION_MS, () -> "2592000000", "Refresh token expiry in ms (default 30d)");
         ensureSecret(SecurityConfigService.KEY_JWT_ISSUER, () -> "apollo-elevators", "JWT 'iss' claim");
 
         securityConfigService.refresh();

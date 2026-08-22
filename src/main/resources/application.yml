@@ -3,9 +3,9 @@ spring:
     name: apollo-elevators-backend
 
   datasource:
-    url: jdbc:postgresql://ep-ancient-voice-azj0gtoq.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
-    username: neondb_owner
-    password: npg_FU5hYwtveqo3
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/apollo}
+    username: ${DB_USERNAME:apollo}
+    password: ${DB_PASSWORD:apollo}
 
   jpa:
     hibernate:
@@ -23,11 +23,26 @@ server:
   port: 8080
 
 app:
-  master-key: iXYPQftcide0XlqLzyN4ccWbMaw/AxsodHjMNIwn7O4=
+  master-key: ${APP_MASTER_KEY:}
+  whatsapp:
+    enabled: ${WHATSAPP_ENABLED:false}
+    base-url: ${WHATSAPP_BASE_URL:https://graph.facebook.com}
+    api-version: ${WHATSAPP_API_VERSION:v20.0}
+    phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:}
+    access-token: ${WHATSAPP_ACCESS_TOKEN:}
 
 logging:
   level:
     com.apollo.elevators: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
 
 springdoc:
   api-docs:
