@@ -6,12 +6,11 @@ import com.apollo.elevators.validation.ValidLiftDetails;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @Data
 @Builder
@@ -48,5 +47,5 @@ public class LiftDetails {
     private String serialNumber;
 
     @Valid
-    private List<AmcDetails> amcContracts;
+    private List<AmcDetails> amcDetails;
 }

@@ -3,6 +3,9 @@ app:
     enabled: true
     phone-number-id: mock-phone-id
     access-token: mock-token
+  email:
+    enabled: true
+    from: tejas.rv@outlook.com
 
 logging:
   level:

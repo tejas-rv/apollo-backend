@@ -5,7 +5,13 @@ import com.apollo.elevators.common.exception.NotificationDeliveryException;
 import com.apollo.elevators.common.exception.ResourceNotFoundException;
 import com.apollo.elevators.common.exception.UnauthorizedException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
@@ -13,11 +19,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -25,6 +28,11 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException exception,
             HttpServletRequest request
     ) {
+        log.warn(
+            "Validation failed for path={}: {}",
+            request.getRequestURI(),
+            exception.getMessage()
+        );
         Map<String, String> errors = new LinkedHashMap<>();
 
         for (FieldError fieldError : exception.getBindingResult().getFieldErrors()) {
@@ -39,6 +47,11 @@ public class GlobalExceptionHandler {
             ResourceNotFoundException exception,
             HttpServletRequest request
     ) {
+        log.warn(
+            "Resource not found for path={}: {}",
+            request.getRequestURI(),
+            exception.getMessage()
+        );
         return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request, Map.of());
     }
 
@@ -47,6 +60,11 @@ public class GlobalExceptionHandler {
             ConflictException exception,
             HttpServletRequest request
     ) {
+        log.warn(
+            "Conflict for path={}: {}",
+            request.getRequestURI(),
+            exception.getMessage()
+        );
         return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request, Map.of());
     }
 
@@ -55,6 +73,11 @@ public class GlobalExceptionHandler {
             RuntimeException exception,
             HttpServletRequest request
     ) {
+        log.warn(
+            "Bad request for path={}: {}",
+            request.getRequestURI(),
+            exception.getMessage()
+        );
         return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request, Map.of());
     }
 
@@ -63,6 +86,11 @@ public class GlobalExceptionHandler {
             UnauthorizedException exception,
             HttpServletRequest request
     ) {
+        log.warn(
+            "Unauthorized for path={}: {}",
+            request.getRequestURI(),
+            exception.getMessage()
+        );
         return buildResponse(HttpStatus.UNAUTHORIZED, exception.getMessage(), request, Map.of());
     }
 
@@ -71,6 +99,11 @@ public class GlobalExceptionHandler {
             AccessDeniedException exception,
             HttpServletRequest request
     ) {
+        log.warn(
+            "Access denied for path={}: {}",
+            request.getRequestURI(),
+            exception.getMessage()
+        );
         return buildResponse(HttpStatus.FORBIDDEN, "You are not allowed to access this resource", request, Map.of());
     }
 
@@ -79,6 +112,11 @@ public class GlobalExceptionHandler {
             IllegalStateException exception,
             HttpServletRequest request
     ) {
+        log.warn(
+            "Illegal state for path={}: {}",
+            request.getRequestURI(),
+            exception.getMessage()
+        );
         return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request, Map.of());
     }
 
@@ -87,6 +125,11 @@ public class GlobalExceptionHandler {
             Exception exception,
             HttpServletRequest request
     ) {
+        log.error(
+            "Unexpected error for path={}",
+            request.getRequestURI(),
+            exception
+        );
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected server error", request, Map.of());
     }
 
@@ -104,6 +147,9 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(),
                 validationErrors
         );
-        return ResponseEntity.status(status).body(body);
+        // Force JSON content type so errors from binary endpoints (PDF etc.) are readable.
+        return ResponseEntity.status(status)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body);
     }
 }

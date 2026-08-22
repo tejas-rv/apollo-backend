@@ -5,6 +5,7 @@ import com.apollo.elevators.repository.RefreshTokenRepository;
 import com.apollo.elevators.security.SecurityConfigService;
 import com.apollo.elevators.user.User;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
@@ -28,6 +30,12 @@ public class RefreshTokenService {
     public IssuedRefreshToken issueToken(User user) {
         String plainToken = generatePlainToken();
         Instant expiry = Instant.now().plusMillis(securityConfigService.getJwtRefreshExpirationMs());
+        log.info(
+                "Issuing refresh token. userId={}, username={}, expiresAt={}",
+                user.getId(),
+                user.getUsername(),
+                expiry
+        );
 
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
@@ -36,23 +44,35 @@ public class RefreshTokenService {
                 .build();
 
         refreshTokenRepository.save(refreshToken);
+        log.info("Refresh token issued. tokenId={}, userId={}", refreshToken.getId(), user.getId());
 
         return new IssuedRefreshToken(plainToken, expiry);
     }
 
     @Transactional
     public User rotate(String plainToken) {
-        RefreshToken refreshToken = refreshTokenRepository.findByTokenHash(hashToken(plainToken))
+        String tokenHash = hashToken(plainToken);
+        log.info("Rotating refresh token. tokenHashPrefix={}", tokenHash.substring(0, 8));
+        RefreshToken refreshToken = refreshTokenRepository.findByTokenHash(tokenHash)
                 .orElseThrow(() -> new UnauthorizedException("Refresh token is invalid"));
 
         Instant now = Instant.now();
 
         if (refreshToken.getRevokedAt() != null || !refreshToken.getExpiresAt().isAfter(now)) {
+            log.warn(
+                    "Refresh token rejected. tokenId={}, userId={}, revokedAt={}, expiresAt={}, now={}",
+                    refreshToken.getId(),
+                    refreshToken.getUser().getId(),
+                    refreshToken.getRevokedAt(),
+                    refreshToken.getExpiresAt(),
+                    now
+            );
             throw new UnauthorizedException("Refresh token has expired or was revoked");
         }
 
         refreshToken.setRevokedAt(now);
         refreshTokenRepository.save(refreshToken);
+        log.info("Refresh token rotated (revoked old token). tokenId={}, userId={}", refreshToken.getId(), refreshToken.getUser().getId());
 
         return refreshToken.getUser();
     }
@@ -61,12 +81,19 @@ public class RefreshTokenService {
     public void revokeAllActiveTokens(User user) {
         Instant revokedAt = Instant.now();
         List<RefreshToken> activeTokens = refreshTokenRepository.findAllByUserAndRevokedAtIsNull(user);
+        log.info(
+                "Revoking all active refresh tokens. userId={}, username={}, activeTokenCount={}",
+                user.getId(),
+                user.getUsername(),
+                activeTokens.size()
+        );
 
         for (RefreshToken token : activeTokens) {
             token.setRevokedAt(revokedAt);
         }
 
         refreshTokenRepository.saveAll(activeTokens);
+        log.info("Revoked all active refresh tokens. userId={}, revokedTokenCount={}", user.getId(), activeTokens.size());
     }
 
     private String generatePlainToken() {

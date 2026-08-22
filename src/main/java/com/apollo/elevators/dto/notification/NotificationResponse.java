@@ -1,4 +1,4 @@
-package com.apollo.elevators.notification.dto;
+package com.apollo.elevators.dto.notification;
 
 import java.time.Instant;
 

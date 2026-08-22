@@ -23,4 +23,23 @@ public class MockWhatsAppClient implements WhatsAppClient {
         log.info("[MOCK WHATSAPP] ➜ To: {} | Message: {} | MockId: {}", phoneNumber, message, mockMessageId);
         return new WhatsAppDeliveryResult(mockMessageId);
     }
+
+    @Override
+    public WhatsAppDeliveryResult sendDocument(
+            String phoneNumber,
+            String fileName,
+            byte[] content,
+            String caption
+    ) {
+        String mockMessageId = "mock-doc-" + UUID.randomUUID();
+        log.info(
+                "[MOCK WHATSAPP DOC] ➜ To: {} | File: {} | Size: {} bytes | Caption: {} | MockId: {}",
+                phoneNumber,
+                fileName,
+                content == null ? 0 : content.length,
+                caption,
+                mockMessageId
+        );
+        return new WhatsAppDeliveryResult(mockMessageId);
+    }
 }

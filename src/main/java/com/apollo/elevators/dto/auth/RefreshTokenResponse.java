@@ -1,4 +1,4 @@
-package com.apollo.elevators.auth.dto;
+package com.apollo.elevators.dto.auth;
 
 public record RefreshTokenResponse(
         String accessToken,

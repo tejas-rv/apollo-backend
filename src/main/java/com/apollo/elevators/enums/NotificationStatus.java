@@ -1,4 +1,4 @@
-package com.apollo.elevators.notification;
+package com.apollo.elevators.enums;
 
 public enum NotificationStatus {
     PENDING,

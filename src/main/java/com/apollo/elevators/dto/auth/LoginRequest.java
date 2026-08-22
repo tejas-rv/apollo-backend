@@ -1,4 +1,4 @@
-package com.apollo.elevators.auth.dto;
+package com.apollo.elevators.dto.auth;
 
 import jakarta.validation.constraints.NotBlank;
 

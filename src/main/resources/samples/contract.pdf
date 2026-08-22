@@ -1,0 +1,32 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 415 >>
+stream
+BT /F1 14 Tf 50 800 Td (Apollo Elevators - Mock AMC Contract) Tj T* /F1 11 Tf (Contract Number: AMC-TEST-001) Tj T* (Customer Name: Demo Customer) Tj T* (Customer Email: demo.customer@example.com) Tj T* (Lift Serial Number: LIFT-000123) Tj T* (AMC Type: Quarterly) Tj T* (AMC Amount: INR 15,850) Tj T* (Start Date: 2026-01-01) Tj T* (End Date: 2027-12-31) Tj T* (Terms: Mock data for attachment testing only.) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000707 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+777
+%%EOF

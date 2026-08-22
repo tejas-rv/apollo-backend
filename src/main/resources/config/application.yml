@@ -21,6 +21,17 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: tejas.v008@gmail.com
+    password: vbabfoqyqeqxrwtz
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 server:
   port: 9071
@@ -33,6 +44,9 @@ app:
     api-version: ${WHATSAPP_API_VERSION:v20.0}
     phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:}
     access-token: ${WHATSAPP_ACCESS_TOKEN:}
+  email:
+    enabled: true
+    from: tejas.v008@gmail.com
 
 logging:
   level:

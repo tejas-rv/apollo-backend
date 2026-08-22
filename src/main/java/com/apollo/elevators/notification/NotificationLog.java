@@ -1,5 +1,7 @@
 package com.apollo.elevators.notification;
 
+import com.apollo.elevators.enums.NotificationChannel;
+import com.apollo.elevators.enums.NotificationStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,7 +26,7 @@ public class NotificationLog {
     @Column(nullable = false, length = 20)
     private NotificationChannel channel;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 255)
     private String recipient;
 
     @Column(nullable = false, length = 1000)

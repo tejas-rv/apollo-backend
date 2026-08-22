@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Configuration;
                         - Lift management
                         - AMC management
                         - Engineer operations
+                        - Notification operations (WhatsApp and Email)
                         - Authentication and authorization
                         """,
                 contact = @Contact(

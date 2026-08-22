@@ -35,6 +35,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-mail")
 
     // Needed in Spring Boot 4 for RestClient.Builder / RestTemplateBuilder auto-config
     implementation("org.springframework.boot:spring-boot-starter-restclient")
@@ -61,6 +62,10 @@ dependencies {
 
     // Swagger
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
+    implementation("com.openhtmltopdf:openhtmltopdf-pdfbox:1.0.10")
+
+    // Thymeleaf (standalone template engine for PDF rendering)
+    implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
 
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")

@@ -81,6 +81,22 @@ The backend now includes an admin-only WhatsApp send endpoint backed by the
 Meta WhatsApp Cloud API:
 
 - `POST /api/admin/notifications/whatsapp`
+- `POST /api/admin/notifications/email`
+- `POST /api/admin/notifications/html-to-pdf`
+
+`/api/admin/notifications/email` supports optional attachments by passing
+`attachments` in request payload, where each item has:
+- `fileName`
+- `contentType`
+- `base64Content`
+
+`/api/admin/notifications/html-to-pdf` accepts HTML content, generates a PDF,
+and sends it via email and/or WhatsApp document:
+- `htmlContent` (required)
+- `pdfFileName` (optional, defaults to generated-document.pdf)
+- `email` / `emailSubject` / `emailMessage` (optional)
+- `whatsappPhoneNumber` / `whatsappCaption` (optional)
+- at least one target (`email` or `whatsappPhoneNumber`) is required
 
 Set these environment variables before using it:
 
@@ -89,7 +105,22 @@ export WHATSAPP_ENABLED=true
 export WHATSAPP_PHONE_NUMBER_ID="<meta phone number id>"
 export WHATSAPP_ACCESS_TOKEN="<meta permanent access token>"
 export WHATSAPP_API_VERSION="v20.0"
+export EMAIL_ENABLED=true
+export EMAIL_FROM="noreply@yourdomain.com"
+export MAIL_HOST="<smtp host>"
+export MAIL_PORT="587"
+export MAIL_USERNAME="<smtp username>"
+export MAIL_PASSWORD="<smtp password>"
 ```
+
+You can send from Outlook to Gmail (or Gmail to Outlook) by switching SMTP
+host/credentials to the sender account's provider and keeping:
+- `MAIL_USERNAME` = actual sender mailbox login
+- `EMAIL_FROM` = same sender mailbox address
+
+Examples:
+- Gmail SMTP: `MAIL_HOST=smtp.gmail.com`, `MAIL_PORT=587`
+- Outlook SMTP: `MAIL_HOST=smtp.office365.com`, `MAIL_PORT=587`
 
 ## Rotating the JWT secret later
 
@@ -108,6 +139,8 @@ validating, so this effectively logs everyone out. Plan rotations accordingly.
   variables in the platform's dashboard — not in any file you commit.
 - Add `WHATSAPP_ENABLED`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`,
   and optionally `WHATSAPP_API_VERSION` when enabling WhatsApp delivery.
+- Add `EMAIL_ENABLED`, `EMAIL_FROM`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`,
+  and `MAIL_PASSWORD` when enabling email delivery.
 - Point `DB_URL` at your free Postgres instance (Supabase/Neon/Render Postgres).
 - Flyway runs the migrations in `db/migration/` automatically on startup.
 
