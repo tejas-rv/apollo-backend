@@ -1,11 +1,14 @@
 spring:
   application:
     name: apollo-elevators-backend
+  profiles:
+    default: neon
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/apollo}
-    username: ${DB_USERNAME:apollo}
-    password: ${DB_PASSWORD:apollo}
+    url: jdbc:postgresql://ep-ancient-voice-azj0gtoq-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+    username: neondb_owner
+    password: npg_FU5hYwtveqo3
+    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
@@ -20,12 +23,12 @@ spring:
     locations: classpath:db/migration
 
 server:
-  port: 8080
+  port: 9071
 
 app:
-  master-key: ${APP_MASTER_KEY:}
+  master-key: /RcKGbKF3Che8FLiKq6cuPcsmTPg4ZwKgIXh111eQzI=
   whatsapp:
-    enabled: ${WHATSAPP_ENABLED:false}
+    enabled: true
     base-url: ${WHATSAPP_BASE_URL:https://graph.facebook.com}
     api-version: ${WHATSAPP_API_VERSION:v20.0}
     phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:}

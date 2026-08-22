@@ -36,6 +36,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
 
+    // Needed in Spring Boot 4 for RestClient.Builder / RestTemplateBuilder auto-config
+    implementation("org.springframework.boot:spring-boot-starter-restclient")
+
     // Security
     implementation("org.springframework.boot:spring-boot-starter-security")
 

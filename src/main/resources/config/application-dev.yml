@@ -1,0 +1,9 @@
+app:
+  whatsapp:
+    enabled: true
+    phone-number-id: mock-phone-id
+    access-token: mock-token
+
+logging:
+  level:
+    com.apollo.elevators: DEBUG
