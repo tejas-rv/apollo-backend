@@ -320,6 +320,10 @@ body {
     color: #f0a500;
 }
 
+.summary-block {
+    page-break-inside: avoid;
+}
+
 .data-table {
     width: 100%;
     border-collapse: collapse;

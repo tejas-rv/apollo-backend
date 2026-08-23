@@ -37,7 +37,7 @@
     <div>
                 <span
                         class="contract-badge"
-                        th:text="${contract.amcType != null ? contract.amcType.toUpperCase() : 'AMC'}"
+                        th:text="${contract.contractType != null ? contract.contractType.toUpperCase() : 'AMC'}"
                 >
                     COMPREHENSIVE AMC
                 </span>
@@ -104,6 +104,10 @@
                 <span class="info-label">Drive Type</span>
                 <span class="info-value" th:text="${contract.driveType}">VVVF</span>
             </div>
+            <div class="info-row" th:if="${contract.doorType != null}">
+                <span class="info-label">Door Type</span>
+                <span class="info-value" th:text="${contract.doorType}">AUTO</span>
+            </div>
             <div class="info-row" th:if="${contract.serialNumber != null}">
                 <span class="info-label">Serial Number</span>
                 <span class="info-value" th:text="${contract.serialNumber}">SN-20240001</span>
@@ -128,6 +132,46 @@
                         th:text="${contract.installationType + (contract.yearOfInstallation != null ? ' (' + contract.yearOfInstallation + ')' : '')}"
                 >
                             New (2020)
+                        </span>
+            </div>
+            <div class="info-row" th:if="${contract.machineType != null or contract.machineName != null}">
+                <span class="info-label">Machine</span>
+                <span
+                        class="info-value"
+                        th:text="${(contract.machineType != null ? contract.machineType : '') + (contract.machineName != null ? (contract.machineType != null ? ' / ' : '') + contract.machineName : '')}"
+                >
+                            Geared / Apollo Drive
+                        </span>
+            </div>
+            <div class="info-row" th:if="${contract.kw != null or contract.amps != null or contract.voltage != null or contract.frequency != null}">
+                <span class="info-label">Electrical</span>
+                <span
+                        class="info-value"
+                        th:text="${(contract.kw != null ? contract.kw + ' KW' : '') + (contract.amps != null ? (contract.kw != null ? ', ' : '') + contract.amps + ' Amps' : '') + (contract.voltage != null ? ((contract.kw != null or contract.amps != null) ? ', ' : '') + contract.voltage + ' V' : '') + (contract.frequency != null ? ((contract.kw != null or contract.amps != null or contract.voltage != null) ? ', ' : '') + contract.frequency + ' Hz' : '')}"
+                >
+                            7.50 KW, 18.00 Amps, 415 V, 50 Hz
+                        </span>
+            </div>
+            <div class="info-row" th:if="${contract.speed != null or contract.ratedSpeed != null or contract.trippingSpeed != null}">
+                <span class="info-label">Speed</span>
+                <span
+                        class="info-value"
+                        th:text="${(contract.speed != null ? 'Travel ' + contract.speed : '') + (contract.ratedSpeed != null ? (contract.speed != null ? ', ' : '') + 'Rated ' + contract.ratedSpeed : '') + (contract.trippingSpeed != null ? ((contract.speed != null or contract.ratedSpeed != null) ? ', ' : '') + 'Trip ' + contract.trippingSpeed : '')}"
+                >
+                            Travel 1.00, Rated 1.00, Trip 1.15
+                        </span>
+            </div>
+            <div class="info-row" th:if="${contract.osgType != null}">
+                <span class="info-label">OSG Type</span>
+                <span class="info-value" th:text="${contract.osgType}">Standard</span>
+            </div>
+            <div class="info-row" th:if="${contract.isUpsPresent != null or contract.upsType != null or contract.kva != null}">
+                <span class="info-label">UPS</span>
+                <span
+                        class="info-value"
+                        th:text="${(contract.isUpsPresent != null ? (contract.isUpsPresent ? 'Present' : 'Not Present') : '') + (contract.upsType != null ? (contract.isUpsPresent != null ? ' / ' : '') + contract.upsType : '') + (contract.kva != null ? ((contract.isUpsPresent != null or contract.upsType != null) ? ' / ' : '') + contract.kva + ' KVA' : '')}"
+                >
+                            Present / Online / 5.00 KVA
                         </span>
             </div>
         </div>
@@ -198,42 +242,66 @@
             </span>
 </div>
 
-<!-- Service Summary now lives on page 1, right under the amount box,
-     instead of behind a forced page-break — this is what drops the
-     document from 4 pages to 3. -->
-<div class="section-heading">Service Summary</div>
+<!-- ============================================================
+     PAGE 2+: SERVICE SUMMARY, SERVICE HISTORY, TERMS, SIGNATURES
+============================================================ -->
 
-<div class="stat-row" th:if="${contract.totalServices != null}">
-    <div class="stat-box">
-        <div class="stat-number" th:text="${contract.totalServices}">12</div>
-        <div class="stat-label">Total Services</div>
-    </div>
-    <div class="stat-box highlight">
-        <div
-                class="stat-number"
-                th:text="${contract.completedServices != null ? contract.completedServices : 0}"
-        >
-            8
+<!-- COMPACT header — takes over the running header from this point on
+     (page 2 onward), so continuation pages don't repeat the full
+     letterhead and get more usable page height. -->
+<div id="page-header-short">
+    <table>
+        <tr>
+            <td class="logo-cell-short">
+                <img src="apollo_elevators_icon.png" class="header-logo-short" alt="Apollo Elevators"/>
+            </td>
+            <td class="company-details-short">
+                <div class="company-name-short">APOLLO ELEVATORS</div>
+            </td>
+            <td class="company-contact-short">
+                Mob.: 89719 74009 / 91483 28396 / 79757 44357<br/>
+                Mail : apolloelevators1@gmail.com
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div class="page-break"></div>
+
+<div class="summary-block">
+    <div class="section-heading">Service Summary</div>
+
+    <div class="stat-row" th:if="${contract.totalServices != null}">
+        <div class="stat-box">
+            <div class="stat-number" th:text="${contract.totalServices}">12</div>
+            <div class="stat-label">Total Services</div>
         </div>
-        <div class="stat-label">Completed</div>
-    </div>
-    <div class="stat-box">
-        <div
-                class="stat-number"
-                th:text="${contract.remainingServices != null ? contract.remainingServices : 0}"
-        >
-            4
+        <div class="stat-box highlight">
+            <div
+                    class="stat-number"
+                    th:text="${contract.completedServices != null ? contract.completedServices : 0}"
+            >
+                8
+            </div>
+            <div class="stat-label">Completed</div>
         </div>
-        <div class="stat-label">Remaining</div>
+        <div class="stat-box">
+            <div
+                    class="stat-number"
+                    th:text="${contract.remainingServices != null ? contract.remainingServices : 0}"
+            >
+                4
+            </div>
+            <div class="stat-label">Remaining</div>
+        </div>
     </div>
 </div>
 
-<!-- Service History Table -->
 <div class="section-heading" th:if="${serviceHistory != null and !serviceHistory.isEmpty()}">
     Service History
 </div>
 
-<div class="no-break" th:if="${serviceHistory != null and !serviceHistory.isEmpty()}">
+<div th:if="${serviceHistory != null and !serviceHistory.isEmpty()}">
     <table class="data-table">
         <thead>
         <tr>
@@ -260,32 +328,6 @@
         </tbody>
     </table>
 </div>
-
-<!-- ============================================================
-     PAGE 2+: TERMS, REMARKS, SIGNATURES
-============================================================ -->
-
-<!-- COMPACT header — takes over the running header from this point on
-     (page 2 onward), so continuation pages don't repeat the full
-     letterhead and get more usable page height. -->
-<div id="page-header-short">
-    <table>
-        <tr>
-            <td class="logo-cell-short">
-                <img src="apollo_elevators_icon.png" class="header-logo-short" alt="Apollo Elevators"/>
-            </td>
-            <td class="company-details-short">
-                <div class="company-name-short">APOLLO ELEVATORS</div>
-            </td>
-            <td class="company-contact-short">
-                Mob.: 89719 74009 / 91483 28396 / 79757 44357<br/>
-                Mail : apolloelevators1@gmail.com
-            </td>
-        </tr>
-    </table>
-</div>
-
-<div class="page-break"></div>
 
 <!-- Company Agree to Undertake -->
 <div class="section-heading">The company agree to undertake:</div>
