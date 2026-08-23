@@ -5,10 +5,15 @@ import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
+import java.net.URL;
 
 @Service
 public class HtmlToPdfService {
+
+    // Classpath location containing amc-contract.html, apollo-amc-contract.css,
+    // and the NotoSans .ttf files. Must match wherever your templates actually
+    // live (src/main/resources/templates/pdf/).
+    private static final String TEMPLATE_BASE_PATH = "/templates/pdf/";
 
     public byte[] generatePdf(String htmlContent) {
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
@@ -16,8 +21,22 @@ public class HtmlToPdfService {
             String cleanHtml = htmlContent.startsWith("\uFEFF")
                     ? htmlContent.substring(1)
                     : htmlContent;
+
+            // Base URI so relative <link href="..."> and CSS url(...) resolve.
+            // Without this (passing null, as before), openhtmltopdf can't
+            // locate apollo-amc-contract.css or the embedded fonts, and both
+            // fail SILENTLY — no CSS, no ₹ glyph, no exception thrown.
+            URL baseUrl = getClass().getResource(TEMPLATE_BASE_PATH);
+            if (baseUrl == null) {
+                throw new IllegalStateException(
+                        "Could not resolve classpath resource " + TEMPLATE_BASE_PATH
+                                + " — check it exists under src/main/resources"
+                );
+            }
+            String baseUri = baseUrl.toExternalForm();
+
             PdfRendererBuilder builder = new PdfRendererBuilder();
-            builder.withHtmlContent(cleanHtml, null);
+            builder.withHtmlContent(cleanHtml, baseUri);
             builder.toStream(outputStream);
             builder.run();
             return outputStream.toByteArray();

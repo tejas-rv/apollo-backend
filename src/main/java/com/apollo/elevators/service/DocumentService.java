@@ -28,6 +28,7 @@ public class DocumentService {
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter DISPLAY_DATE_FMT = DateTimeFormatter.ofPattern("dd MMM yyyy");
+    private static final java.math.BigDecimal GST_PERCENTAGE = java.math.BigDecimal.valueOf(18);
 
     private final CustomerRepository customerRepository;
     private final PdfTemplateService pdfTemplateService;
@@ -141,6 +142,18 @@ public class DocumentService {
             remaining = Math.max(0, amc.getTotalServices() - amc.getCompletedServices());
         }
 
+        Double gstPercentage = null;
+        Double gstAmount = null;
+        Double totalAmount = null;
+        if (amc.getAmcAmount() != null) {
+            java.math.BigDecimal base = amc.getAmcAmount();
+            java.math.BigDecimal gst = base.multiply(GST_PERCENTAGE)
+                    .divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+            gstPercentage = GST_PERCENTAGE.doubleValue();
+            gstAmount = gst.doubleValue();
+            totalAmount = base.add(gst).doubleValue();
+        }
+
         ContractPdfRequest.ContractDetails contractDetails = new ContractPdfRequest.ContractDetails(
                 amc.getContractNumber(),
                 lift.getLiftType() != null ? lift.getLiftType().name() : null,
@@ -158,6 +171,9 @@ public class DocumentService {
                 formatDate(amc.getStartDate()),
                 formatDate(amc.getEndDate()),
                 amc.getAmcAmount() != null ? amc.getAmcAmount().doubleValue() : null,
+                gstPercentage,
+                gstAmount,
+                totalAmount,
                 amc.getPaymentFrequency(),
                 formatDate(amc.getNextPaymentDate()),
                 formatDate(amc.getNextServiceDate()),

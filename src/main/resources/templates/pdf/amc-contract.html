@@ -1,454 +1,54 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8"/>
     <title>AMC Contract - Apollo Elevators</title>
-    <style>
-        /* ============================================================
-           PAGE SETUP â€” openhtmltopdf uses CSS Paged Media Level 3
-        ============================================================ */
-        @page {
-            size: A4;
-            margin: 20mm 15mm 25mm 15mm;
-        }
-
-        @page :first {
-            margin-top: 10mm;
-        }
-
-        /* ============================================================
-           GLOBAL
-        ============================================================ */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 10pt;
-            color: #222222;
-            line-height: 1.5;
-        }
-
-        /* ============================================================
-           HEADER â€” appears on every page via running element
-        ============================================================ */
-        #page-header {
-            position: running(pageHeader);
-            width: 100%;
-            border-bottom: 2px solid #003366;
-            padding-bottom: 6px;
-            margin-bottom: 6px;
-        }
-
-        #page-header table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        #page-header .logo-cell {
-            vertical-align: middle;
-        }
-
-        #page-header .company-name {
-            font-size: 18pt;
-            font-weight: bold;
-            color: #003366;
-            letter-spacing: 1px;
-        }
-
-        #page-header .company-tagline {
-            font-size: 8pt;
-            color: #666666;
-            margin-top: 2px;
-        }
-
-        #page-header .company-contact {
-            font-size: 8pt;
-            color: #444444;
-            text-align: right;
-        }
-
-        @page {
-            @top-center {
-                content: element(pageHeader);
-            }
-        }
-
-        /* ============================================================
-           FOOTER â€” page number on every page
-        ============================================================ */
-        @page {
-            @bottom-right {
-                content: "Page " counter(page) " of " counter(pages);
-                font-size: 8pt;
-                color: #888888;
-                font-family: Arial, Helvetica, sans-serif;
-            }
-            @bottom-left {
-                content: "Apollo Elevators â€” Confidential";
-                font-size: 8pt;
-                color: #888888;
-                font-family: Arial, Helvetica, sans-serif;
-            }
-        }
-
-        /* ============================================================
-           UTILITY
-        ============================================================ */
-        .page-break { page-break-before: always; }
-        .no-break    { page-break-inside: avoid; }
-
-        /* ============================================================
-           COVER BANNER (page 1)
-        ============================================================ */
-        .cover-banner {
-            background-color: #003366;
-            color: #ffffff;
-            padding: 18px 22px;
-            border-radius: 6px;
-            margin-bottom: 22px;
-        }
-
-        .cover-banner h1 {
-            font-size: 20pt;
-            letter-spacing: 2px;
-            margin-bottom: 4px;
-        }
-
-        .cover-banner p {
-            font-size: 10pt;
-            opacity: 0.85;
-        }
-
-        .contract-badge {
-            display: inline-block;
-            background-color: #f0a500;
-            color: #000000;
-            font-size: 9pt;
-            font-weight: bold;
-            padding: 3px 12px;
-            border-radius: 12px;
-            margin-top: 8px;
-            letter-spacing: 1px;
-        }
-
-        /* ============================================================
-           INFO GRID (two-column card sections)
-        ============================================================ */
-        .info-grid {
-            display: table;
-            width: 100%;
-            margin-bottom: 18px;
-            border-collapse: separate;
-            border-spacing: 10px 0;
-        }
-
-        .info-col {
-            display: table-cell;
-            width: 50%;
-            vertical-align: top;
-        }
-
-        .info-card {
-            border: 1px solid #d0d8e4;
-            border-radius: 6px;
-            padding: 12px 14px;
-            background-color: #f8fafc;
-            height: 100%;
-        }
-
-        .info-card h3 {
-            font-size: 10pt;
-            font-weight: bold;
-            color: #003366;
-            border-bottom: 1px solid #ccd6e4;
-            padding-bottom: 5px;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .info-row {
-            display: table;
-            width: 100%;
-            margin-bottom: 3px;
-        }
-
-        .info-label {
-            display: table-cell;
-            width: 42%;
-            font-weight: bold;
-            color: #555555;
-            font-size: 9pt;
-            padding-right: 6px;
-        }
-
-        .info-value {
-            display: table-cell;
-            color: #222222;
-            font-size: 9pt;
-        }
-
-        /* ============================================================
-           SECTION HEADINGS
-        ============================================================ */
-        .section-heading {
-            font-size: 12pt;
-            font-weight: bold;
-            color: #003366;
-            border-left: 4px solid #f0a500;
-            padding-left: 10px;
-            margin: 20px 0 10px 0;
-        }
-
-        /* ============================================================
-           STATUS BADGES
-        ============================================================ */
-        .badge {
-            display: inline-block;
-            padding: 2px 10px;
-            border-radius: 10px;
-            font-size: 8.5pt;
-            font-weight: bold;
-        }
-        .badge-active   { background-color: #d4edda; color: #155724; }
-        .badge-expired  { background-color: #f8d7da; color: #721c24; }
-        .badge-pending  { background-color: #fff3cd; color: #856404; }
-        .badge-completed { background-color: #cce5ff; color: #004085; }
-
-        /* ============================================================
-           STATISTICS ROW
-        ============================================================ */
-        .stat-row {
-            display: table;
-            width: 100%;
-            margin-bottom: 18px;
-            border-collapse: separate;
-            border-spacing: 8px 0;
-        }
-
-        .stat-box {
-            display: table-cell;
-            width: 33.33%;
-            text-align: center;
-            border: 1px solid #d0d8e4;
-            border-radius: 6px;
-            padding: 10px 8px;
-            background-color: #f8fafc;
-        }
-
-        .stat-number {
-            font-size: 22pt;
-            font-weight: bold;
-            color: #003366;
-            line-height: 1.1;
-        }
-
-        .stat-label {
-            font-size: 8pt;
-            color: #888888;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-top: 2px;
-        }
-
-        .stat-box.highlight .stat-number { color: #f0a500; }
-
-        /* ============================================================
-           TABLES
-        ============================================================ */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 18px;
-            font-size: 9pt;
-        }
-
-        .data-table thead tr {
-            background-color: #003366;
-            color: #ffffff;
-        }
-
-        .data-table thead th {
-            padding: 8px 10px;
-            text-align: left;
-            font-weight: bold;
-            font-size: 9pt;
-        }
-
-        .data-table tbody tr:nth-child(even) {
-            background-color: #f4f7fb;
-        }
-
-        .data-table tbody tr:nth-child(odd) {
-            background-color: #ffffff;
-        }
-
-        .data-table tbody td {
-            padding: 7px 10px;
-            border-bottom: 1px solid #e0e8f0;
-        }
-
-        .data-table tfoot tr {
-            background-color: #eaf0f8;
-            font-weight: bold;
-        }
-
-        .data-table tfoot td {
-            padding: 7px 10px;
-            border-top: 2px solid #003366;
-        }
-
-        /* ============================================================
-           AMC PAYMENT HIGHLIGHT BOX
-        ============================================================ */
-        .amount-box {
-            border: 2px solid #003366;
-            border-radius: 6px;
-            padding: 12px 16px;
-            margin-bottom: 18px;
-            background-color: #eaf0f8;
-            display: table;
-            width: 100%;
-        }
-
-        .amount-label {
-            display: table-cell;
-            font-size: 11pt;
-            font-weight: bold;
-            color: #003366;
-            vertical-align: middle;
-        }
-
-        .amount-value {
-            display: table-cell;
-            font-size: 16pt;
-            font-weight: bold;
-            color: #003366;
-            text-align: right;
-            vertical-align: middle;
-        }
-
-        /* ============================================================
-           TERMS BOX
-        ============================================================ */
-        .terms-box {
-            border: 1px solid #d0d8e4;
-            border-radius: 6px;
-            padding: 12px 14px;
-            background-color: #fffdf5;
-            margin-bottom: 18px;
-            font-size: 9pt;
-        }
-
-        .terms-box h3 {
-            font-size: 10pt;
-            font-weight: bold;
-            color: #003366;
-            margin-bottom: 8px;
-        }
-
-        .terms-box ol {
-            padding-left: 18px;
-        }
-
-        .terms-box ol li {
-            margin-bottom: 4px;
-            line-height: 1.5;
-        }
-
-        /* ============================================================
-           SIGNATURE BLOCK
-        ============================================================ */
-        .signature-block {
-            display: table;
-            width: 100%;
-            margin-top: 30px;
-            border-collapse: separate;
-            border-spacing: 20px 0;
-        }
-
-        .signature-col {
-            display: table-cell;
-            width: 50%;
-            text-align: center;
-        }
-
-        .signature-line {
-            border-top: 1px solid #333333;
-            margin-top: 40px;
-            padding-top: 6px;
-            font-size: 9pt;
-            color: #444444;
-        }
-
-        /* ============================================================
-           REMARKS
-        ============================================================ */
-        .remarks-box {
-            border-left: 4px solid #f0a500;
-            padding: 8px 12px;
-            background-color: #fffdf5;
-            margin-bottom: 18px;
-            font-size: 9pt;
-            font-style: italic;
-            color: #555555;
-        }
-
-        /* ============================================================
-           WATERMARK / CONFIDENTIAL stamp (light, background)
-        ============================================================ */
-        .confidential-stamp {
-            font-size: 52pt;
-            font-weight: bold;
-            color: rgba(0, 51, 102, 0.05);
-            text-align: center;
-            letter-spacing: 6px;
-            text-transform: uppercase;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="apollo-amc-contract.css"/>
 </head>
 <body>
 
-<!-- Running header element for all pages -->
-<div id="page-header">
+<div id="page-header-full">
     <table>
         <tr>
-            <td class="logo-cell" style="width: 60%;">
-                <div class="company-name">&#9650; APOLLO ELEVATORS</div>
-                <div class="company-tagline">Elevating Standards â€” Ensuring Safety â€” Delivering Excellence</div>
+            <td class="logo-cell">
+                <img src="apollo_elevators_logo.png" class="header-logo" alt="Apollo Elevators"/>
             </td>
-            <td class="company-contact">
-                apollo.elevators@gmail.com<br/>
-                www.apolloelevators.in<br/>
-                CIN: U74999MH2010PTC000000
+            <td class="company-details">
+                <div class="company-name">APOLLO ELEVATORS</div>
+                <div class="company-address">No. 14, Karihobana Halli, T.G. Palya, Bangalore &#8211; 560 058</div>
+                <div class="company-address">Mob.: 89719 74009 / 91483 28396 / 79757 44357</div>
+                <div class="company-address">Mail : apolloelevators1@gmail.com</div>
             </td>
         </tr>
     </table>
 </div>
 
 <!-- ============================================================
-     PAGE 1: COVER + CUSTOMER + LIFT DETAILS
+     PAGE 1: COVER + CUSTOMER + LIFT DETAILS + SERVICE SUMMARY
 ============================================================ -->
 
 <!-- Cover Banner -->
 <div class="cover-banner">
     <h1>Annual Maintenance Contract</h1>
-    <p>Contract No: <strong th:text="${contract.contractNumber}">AMC-2024-001</strong>
-        &#160;|&#160; Generated: <strong th:text="${generatedDate}">01 Jan 2024</strong></p>
+    <p>
+        Contract No: <strong th:text="${contract.contractNumber}">AMC-2024-001</strong> &#160;|&#160; Generated:
+        <strong th:text="${generatedDate}">01 Jan 2024</strong>
+    </p>
     <div>
-        <span class="contract-badge"
-              th:text="${contract.amcType != null ? contract.amcType.toUpperCase() : 'AMC'}">
-            COMPREHENSIVE AMC
-        </span>
+                <span
+                        class="contract-badge"
+                        th:text="${contract.amcType != null ? contract.amcType.toUpperCase() : 'AMC'}"
+                >
+                    COMPREHENSIVE AMC
+                </span>
         &#160;
-        <span class="badge"
-              th:classappend="${contract.status == 'ACTIVE'} ? 'badge-active' : (${contract.status == 'EXPIRED'} ? 'badge-expired' : 'badge-pending')"
-              th:text="${contract.status != null ? contract.status : 'PENDING'}">
-            ACTIVE
-        </span>
+        <span
+                class="badge"
+                th:classappend="${contract.status == 'ACTIVE'} ? 'badge-active' : (${contract.status == 'EXPIRED'} ? 'badge-expired' : 'badge-pending')"
+                th:text="${contract.status != null ? contract.status : 'PENDING'}"
+        >
+                    ACTIVE
+                </span>
     </div>
 </div>
 
@@ -456,7 +56,7 @@
 <div class="info-grid">
     <div class="info-col">
         <div class="info-card">
-            <h3>&#128100; Customer Information</h3>
+            <h3>Customer Information</h3>
             <div class="info-row">
                 <span class="info-label">Customer Name</span>
                 <span class="info-value" th:text="${customer.name}">John Doe</span>
@@ -475,26 +75,30 @@
             </div>
             <div class="info-row" th:if="${customer.address != null}">
                 <span class="info-label">Address</span>
-                <span class="info-value"
-                      th:text="${customer.address + (customer.city != null ? ', ' + customer.city : '') + (customer.state != null ? ', ' + customer.state : '') + (customer.pincode != null ? ' - ' + customer.pincode : '')}">
-                    123, Main St, Mumbai
-                </span>
+                <span
+                        class="info-value"
+                        th:text="${customer.address + (customer.city != null ? ', ' + customer.city : '') + (customer.state != null ? ', ' + customer.state : '') + (customer.pincode != null ? ' - ' + customer.pincode : '')}"
+                >
+                            123, Main St, Mumbai
+                        </span>
             </div>
         </div>
     </div>
     <div class="info-col">
         <div class="info-card">
-            <h3>&#128737; Lift / Elevator Details</h3>
+            <h3>Lift / Elevator Details</h3>
             <div class="info-row" th:if="${contract.liftType != null}">
                 <span class="info-label">Lift Type</span>
                 <span class="info-value" th:text="${contract.liftType}">Passenger</span>
             </div>
             <div class="info-row" th:if="${contract.brand != null}">
                 <span class="info-label">Brand / Model</span>
-                <span class="info-value"
-                      th:text="${contract.brand + (contract.liftModel != null ? ' / ' + contract.liftModel : '')}">
-                    Otis / XO2000
-                </span>
+                <span
+                        class="info-value"
+                        th:text="${contract.brand + (contract.liftModel != null ? ' / ' + contract.liftModel : '')}"
+                >
+                            Otis / XO2000
+                        </span>
             </div>
             <div class="info-row" th:if="${contract.driveType != null}">
                 <span class="info-label">Drive Type</span>
@@ -510,24 +114,28 @@
             </div>
             <div class="info-row" th:if="${contract.capacityInPersons != null}">
                 <span class="info-label">Capacity</span>
-                <span class="info-value"
-                      th:text="${contract.capacityInPersons + ' Persons (' + (contract.capacityInKg != null ? contract.capacityInKg + ' Kg)' : '')}">
-                    8 Persons (630 Kg)
-                </span>
+                <span
+                        class="info-value"
+                        th:text="${contract.capacityInPersons + ' Persons' + (contract.capacityInKg != null and contract.capacityInKg > 0 ? ' (' + contract.capacityInKg + ' Kg)' : '')}"
+                >
+                            8 Persons (630 Kg)
+                        </span>
             </div>
             <div class="info-row" th:if="${contract.installationType != null}">
                 <span class="info-label">Installation</span>
-                <span class="info-value"
-                      th:text="${contract.installationType + (contract.yearOfInstallation != null ? ' (' + contract.yearOfInstallation + ')' : '')}">
-                    New (2020)
-                </span>
+                <span
+                        class="info-value"
+                        th:text="${contract.installationType + (contract.yearOfInstallation != null ? ' (' + contract.yearOfInstallation + ')' : '')}"
+                >
+                            New (2020)
+                        </span>
             </div>
         </div>
     </div>
 </div>
 
 <!-- AMC Contract Period & Amount -->
-<div class="section-heading">&#128203; Contract Details</div>
+<div class="section-heading">Contract Details</div>
 
 <div class="info-grid">
     <div class="info-col">
@@ -556,9 +164,18 @@
             <h3>Payment Information</h3>
             <div class="info-row" th:if="${contract.amcAmount != null}">
                 <span class="info-label">AMC Amount</span>
-                <span class="info-value"
-                      th:text="'&#8377; ' + ${#numbers.formatDecimal(contract.amcAmount, 1, 2)}">
-                    &#8377; 18,000.00
+                <span
+                        class="info-value"
+                        th:text="'&#8377; ' + ${#numbers.formatDecimal(contract.amcAmount, 1, 2)}"
+                >
+                </span>
+            </div>
+            <div class="info-row" th:if="${contract.gstPercentage != null}">
+                <span class="info-label" th:text="'GST (' + ${contract.gstPercentage} + '%)'">GST (18%)</span>
+                <span
+                        class="info-value"
+                        th:text="'&#8377; ' + ${#numbers.formatDecimal(contract.gstAmount, 1, 2)}"
+                >
                 </span>
             </div>
             <div class="info-row" th:if="${contract.paymentFrequency != null}">
@@ -569,20 +186,22 @@
     </div>
 </div>
 
-<!-- Amount Highlight Box -->
-<div class="amount-box" th:if="${contract.amcAmount != null}">
+<!-- Amount Highlight Box: base + GST = grand total actually payable -->
+<div class="amount-box" th:if="${contract.totalAmount != null}">
+    <span class="amount-label">Total Payable (incl. GST)</span>
+    <span class="amount-value" th:text="'&#8377; ' + ${#numbers.formatDecimal(contract.totalAmount, 1, 2)}">
+            </span>
+</div>
+<div class="amount-box" th:if="${contract.totalAmount == null and contract.amcAmount != null}">
     <span class="amount-label">Total AMC Contract Value</span>
     <span class="amount-value" th:text="'&#8377; ' + ${#numbers.formatDecimal(contract.amcAmount, 1, 2)}">
-        &#8377; 18,000.00
-    </span>
+            </span>
 </div>
 
-<!-- ============================================================
-     PAGE 2: SERVICE STATISTICS + SERVICE HISTORY
-============================================================ -->
-<div class="page-break"></div>
-
-<div class="section-heading">&#128200; Service Summary</div>
+<!-- Service Summary now lives on page 1, right under the amount box,
+     instead of behind a forced page-break — this is what drops the
+     document from 4 pages to 3. -->
+<div class="section-heading">Service Summary</div>
 
 <div class="stat-row" th:if="${contract.totalServices != null}">
     <div class="stat-box">
@@ -590,94 +209,209 @@
         <div class="stat-label">Total Services</div>
     </div>
     <div class="stat-box highlight">
-        <div class="stat-number" th:text="${contract.completedServices != null ? contract.completedServices : 0}">8</div>
+        <div
+                class="stat-number"
+                th:text="${contract.completedServices != null ? contract.completedServices : 0}"
+        >
+            8
+        </div>
         <div class="stat-label">Completed</div>
     </div>
     <div class="stat-box">
-        <div class="stat-number" th:text="${contract.remainingServices != null ? contract.remainingServices : 0}">4</div>
+        <div
+                class="stat-number"
+                th:text="${contract.remainingServices != null ? contract.remainingServices : 0}"
+        >
+            4
+        </div>
         <div class="stat-label">Remaining</div>
     </div>
 </div>
 
 <!-- Service History Table -->
 <div class="section-heading" th:if="${serviceHistory != null and !serviceHistory.isEmpty()}">
-    &#128295; Service History
+    Service History
 </div>
 
 <div class="no-break" th:if="${serviceHistory != null and !serviceHistory.isEmpty()}">
     <table class="data-table">
         <thead>
-            <tr>
-                <th style="width: 20%;">Date</th>
-                <th style="width: 25%;">Engineer</th>
-                <th style="width: 40%;">Work Done</th>
-                <th style="width: 15%;">Status</th>
-            </tr>
+        <tr>
+            <th style="width: 20%">Date</th>
+            <th style="width: 25%">Engineer</th>
+            <th style="width: 40%">Work Done</th>
+            <th style="width: 15%">Status</th>
+        </tr>
         </thead>
         <tbody>
-            <tr th:each="entry : ${serviceHistory}">
-                <td th:text="${entry.serviceDate}">01/01/2024</td>
-                <td th:text="${entry.engineerName}">Rajesh Kumar</td>
-                <td th:text="${entry.workDone}">Routine maintenance</td>
-                <td>
-                    <span class="badge"
-                          th:classappend="${entry.status == 'COMPLETED'} ? 'badge-completed' : 'badge-pending'"
-                          th:text="${entry.status}">COMPLETED</span>
-                </td>
-            </tr>
+        <tr th:each="entry : ${serviceHistory}">
+            <td th:text="${entry.serviceDate}">01/01/2024</td>
+            <td th:text="${entry.engineerName}">Rajesh Kumar</td>
+            <td th:text="${entry.workDone}">Routine maintenance</td>
+            <td>
+                            <span
+                                    class="badge"
+                                    th:classappend="${entry.status == 'COMPLETED'} ? 'badge-completed' : 'badge-pending'"
+                                    th:text="${entry.status}"
+                            >COMPLETED</span
+                            >
+            </td>
+        </tr>
         </tbody>
     </table>
 </div>
 
 <!-- ============================================================
-     PAGE 3: TERMS, REMARKS, SIGNATURES
+     PAGE 2+: TERMS, REMARKS, SIGNATURES
 ============================================================ -->
+
+<!-- COMPACT header — takes over the running header from this point on
+     (page 2 onward), so continuation pages don't repeat the full
+     letterhead and get more usable page height. -->
+<div id="page-header-short">
+    <table>
+        <tr>
+            <td class="logo-cell-short">
+                <img src="apollo_elevators_icon.png" class="header-logo-short" alt="Apollo Elevators"/>
+            </td>
+            <td class="company-details-short">
+                <div class="company-name-short">APOLLO ELEVATORS</div>
+            </td>
+            <td class="company-contact-short">
+                Mob.: 89719 74009 / 91483 28396 / 79757 44357<br/>
+                Mail : apolloelevators1@gmail.com
+            </td>
+        </tr>
+    </table>
+</div>
+
 <div class="page-break"></div>
 
-<div class="section-heading">&#128221; Terms &amp; Conditions</div>
+<!-- Company Agree to Undertake -->
+<div class="section-heading">The company agree to undertake:</div>
 
 <div class="terms-box">
-    <h3 th:text="${contract.termsAndConditions != null ? 'Contract Specific AMC Terms' : 'Standard AMC Terms'}">
-        Standard AMC Terms
-    </h3>
-    <div th:if="${contract.termsAndConditions != null}">
-        <p style="white-space: pre-line;" th:text="${contract.termsAndConditions}"></p>
-    </div>
-    <div th:if="${contract.termsAndConditions == null}">
-        <ol>
-            <li>This AMC covers routine preventive maintenance services as agreed upon at the time of signing.</li>
-            <li>Emergency breakdowns are covered 24x7 during the contract period.</li>
-            <li>Spare parts not included in this AMC will be charged separately at actuals.</li>
-            <li>The customer must provide safe access to the lift machinery room and shaft.</li>
-            <li>Apollo Elevators reserves the right to reschedule service visits with 24-hour notice.</li>
-            <li>This contract is non-transferable and valid only for the specified lift and premises.</li>
-            <li>Any modification to the lift by a third party voids this contract.</li>
-            <li>Payment must be received within 15 days of invoice date to maintain AMC validity.</li>
-            <li>Apollo Elevators is not liable for damages caused by power fluctuations, floods, or other acts of God.</li>
-            <li>Contract renewal must be requested at least 30 days before the expiry date.</li>
-        </ol>
-    </div>
+    <ol>
+        <li>
+            To carry out preventive maintenance as per service check list once in two months and will replace
+            the worn-out parts due to fair wear &amp; tear that is, brake shoes, guide shoe lining, reed
+            switches, door ropes, maintenance board, pit switch, maintenance buttons repair to door resistance
+            relays &amp; mechanical parts. only repair to motor on additional labor charges.
+
+            <br/>
+
+            Only labor charges not included to replace door contacts, door bottom shoes, Car ceiling lights.
+        </li>
+
+        <li>
+            To attend the brake downs on receipt of information from the owner or any of his authorized agent as
+            the shortest possible time (with in four hours).
+        </li>
+
+        <li>
+            To provide engineers/technicians at the site on the special occasion in case of any unforeseen
+            problems in the elevator.
+        </li>
+
+        <li>
+            To attend the brake down after normal working hours this may be deemed to keep the elevator in safe
+            working order.
+        </li>
+    </ol>
 </div>
 
-<!-- Remarks -->
-<div class="remarks-box" th:if="${contract.remarks != null and !#strings.isEmpty(contract.remarks)}">
-    <strong>Remarks:</strong> <span th:text="${contract.remarks}">No additional remarks.</span>
+<!-- Following are not covered -->
+<div class="section-heading">The following are not covered under this agreement</div>
+
+<div class="terms-box">
+    <ol>
+        <li>Replacement of the main switches in machine room.</li>
+
+        <li>Replacement of decorative fittings.</li>
+
+        <li>Replacement of cabin fan, interiors of car flooring, main ropes, speed governor ropes.</li>
+
+        <li>
+            Any work which may be rendered necessary, because of revision of existing government, municipal or
+            elevator acts, promulgator subsequent to the date of installation of elevator.
+        </li>
+
+        <li>
+            Any event beyond its reasonable control such as act of God, public enmity, act of war, sabotage,
+            damage resulting from fire, floods, rain, theft, accident or riot, lockouts, sudden surges of
+            voltages causing damage to the motor equipments.
+        </li>
+    </ol>
 </div>
 
-<!-- Signature Block -->
+<!-- General Conditions -->
+<div class="section-heading">General conditions:</div>
+
+<div class="terms-box">
+    <ol>
+        <li>
+            To ensure irregularity in the door operation and control switches it was advice to keep the machine
+            room under lock and key. Only authorized persons of the company and the customer are allowed to the
+            machine room.
+        </li>
+
+        <li>
+            Not to permit any person other than the company's authorized engineer/technician to do work in the
+            machine room.
+        </li>
+
+        <li>
+            The company reserves the right to shut down the elevator at any time during the contract period, if
+            in its opinion the company feels that the condition of the elevator has been unsafe for use either
+            due to normal wear and tear or improper usage on prior intimation to the customer.
+        </li>
+
+        <li>The company is not responsible to assure any liability for injury other than its employees.</li>
+
+        <li>
+            The elevator will remain out of commission during the of maintenance work. It has to be ensured that
+            no one will be allowed to use the elevator during this period.
+        </li>
+
+        <li>
+            In case of electricity failure or brake down of elevator the customer shall ensure that two trained
+            persons in the building will be available for emergency rescue of trapped passengers.
+        </li>
+
+        <li>
+            If the service is not required, three months' notice should be given to the company by the customer
+            and vice versa by mutual understanding. All dues must be cleared by the customer before cancellation
+            of contract.
+        </li>
+
+        <li>
+            Half year payment, by cheque/bank transfer in favor of apollo elevator, should be made within 10
+            days of submission of agreement /bill.
+        </li>
+    </ol>
+</div>
+
+<!-- Signature Block — centered as a narrower group in the middle of
+     the page, with extra top margin, rather than stretched edge to
+     edge, to make use of the leftover space on this page. -->
 <div class="signature-block">
-    <div class="signature-col">
-        <div class="signature-line">
-            <strong th:text="${customer.name}">Customer Name</strong><br/>
-            Authorised Signatory<br/>
-            Date: _______________
+    <div class="signature-block-inner">
+        <div class="signature-col">
+            <div class="signature-line">
+                <strong th:text="${customer.name}"> Client Representative </strong>
+                <br/>
+                Authorised person signature and stamp
+                <br/>
+                Date: _______________
+            </div>
         </div>
-    </div>
-    <div class="signature-col">
-        <div class="signature-line">
-            <strong>For Apollo Elevators</strong><br/>
-            Authorised Signatory<br/>
-            Date: _______________
+
+        <div class="signature-col">
+            <div class="signature-line">
+                <strong>For Apollo Elevators</strong><br/>
+                Authorised Signatory<br/>
+                Date: _______________
+            </div>
         </div>
     </div>
 </div>

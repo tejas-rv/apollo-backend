@@ -1,0 +1,453 @@
+@font-face {
+    font-family: 'AppFont';
+    src: url('NotoSans-Regular.ttf');
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: 'AppFont';
+    src: url('NotoSans-Bold.ttf');
+    font-weight: bold;
+}
+
+@page {
+    size: A4;
+    margin: 22mm 15mm 25mm 15mm;
+}
+
+@page :first {
+    margin-top: 33mm;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'AppFont', Arial, Helvetica, sans-serif;
+    font-size: 10pt;
+    color: #222222;
+    line-height: 1.5;
+}
+
+/* -- FULL header: page 1 only -- */
+#page-header-full {
+    position: running(pageHeaderFull);
+    width: 100%;
+    border-bottom: 2px solid #003366;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+}
+
+#page-header-full table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#page-header-full .logo-cell {
+    width: 130px;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.header-logo {
+    /* apollo_elevators_logo.png is the trimmed icon+wordmark+tagline
+       lockup, natural aspect ratio ~1.24:1 (wide) */
+    max-width: 120px;
+    max-height: 95px;
+}
+
+#page-header-full .company-details {
+    vertical-align: middle;
+    padding-left: 14px;
+}
+
+#page-header-full .company-name {
+    font-size: 19pt;
+    font-weight: bold;
+    color: #003366;
+    letter-spacing: 0.5px;
+}
+
+#page-header-full .company-tagline {
+    font-size: 9pt;
+    color: #003366;
+    margin-top: 2px;
+}
+
+#page-header-full .company-address {
+    font-size: 8.5pt;
+    color: #003366;
+    margin-top: 1px;
+}
+
+/* -- COMPACT header: page 2 onward -- */
+#page-header-short {
+    position: running(pageHeaderShort);
+    width: 100%;
+    border-bottom: 1px solid #003366;
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+}
+
+#page-header-short table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#page-header-short .logo-cell-short {
+    width: 36px;
+    vertical-align: middle;
+}
+
+.header-logo-short {
+    max-width: 22px;
+    max-height: 28px;
+}
+
+#page-header-short .company-details-short {
+    vertical-align: middle;
+    padding-left: 8px;
+}
+
+#page-header-short .company-name-short {
+    font-size: 12pt;
+    font-weight: bold;
+    color: #003366;
+    letter-spacing: 0.5px;
+}
+
+#page-header-short .company-contact-short {
+    vertical-align: middle;
+    text-align: right;
+    font-size: 7.5pt;
+    color: #003366;
+}
+
+@page {
+    @top-center {
+        content: element(pageHeaderShort);
+    }
+}
+
+@page :first {
+    @top-center {
+        content: element(pageHeaderFull);
+    }
+}
+
+@page {
+    @bottom-right {
+        content: "Page " counter(page) " of " counter(pages);
+        font-size: 8pt;
+        color: #888888;
+        font-family: 'AppFont', Arial, Helvetica, sans-serif;
+    }
+    @bottom-left {
+        content: "Apollo Elevators — Confidential";
+        font-size: 8pt;
+        color: #888888;
+        font-family: 'AppFont', Arial, Helvetica, sans-serif;
+    }
+}
+
+.page-break {
+    page-break-before: always;
+}
+
+.no-break {
+    page-break-inside: avoid;
+}
+
+.cover-banner {
+    background-color: #003366;
+    color: #ffffff;
+    padding: 18px 22px;
+    border-radius: 6px;
+    margin-bottom: 22px;
+}
+
+.cover-banner h1 {
+    font-size: 20pt;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+}
+
+.cover-banner p {
+    font-size: 10pt;
+    color: #d7e2f0;
+}
+
+.contract-badge {
+    display: inline-block;
+    background-color: #f0a500;
+    color: #000000;
+    font-size: 9pt;
+    font-weight: bold;
+    padding: 3px 12px;
+    border-radius: 12px;
+    margin-top: 8px;
+    letter-spacing: 1px;
+}
+
+.info-grid {
+    display: table;
+    width: 100%;
+    margin-bottom: 18px;
+    border-collapse: separate;
+    border-spacing: 10px 0;
+}
+
+.info-col {
+    display: table-cell;
+    width: 50%;
+    vertical-align: top;
+}
+
+.info-card {
+    border: 1px solid #d0d8e4;
+    border-radius: 6px;
+    padding: 12px 14px;
+    background-color: #f8fafc;
+    height: 100%;
+}
+
+.info-card h3 {
+    font-size: 10pt;
+    font-weight: bold;
+    color: #003366;
+    border-bottom: 1px solid #ccd6e4;
+    padding-bottom: 5px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-row {
+    display: table;
+    width: 100%;
+    margin-bottom: 3px;
+}
+
+.info-label {
+    display: table-cell;
+    width: 42%;
+    font-weight: bold;
+    color: #555555;
+    font-size: 9pt;
+    padding-right: 6px;
+}
+
+.info-value {
+    display: table-cell;
+    color: #222222;
+    font-size: 9pt;
+}
+
+.section-heading {
+    font-size: 12pt;
+    font-weight: bold;
+    color: #003366;
+    border-left: 4px solid #f0a500;
+    padding-left: 10px;
+    margin: 20px 0 10px 0;
+}
+
+.badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: 8.5pt;
+    font-weight: bold;
+}
+
+.badge-active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.badge-expired {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.badge-pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.badge-completed {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.stat-row {
+    display: table;
+    width: 100%;
+    margin-bottom: 18px;
+    border-collapse: separate;
+    border-spacing: 8px 0;
+}
+
+.stat-box {
+    display: table-cell;
+    width: 33.33%;
+    text-align: center;
+    border: 1px solid #d0d8e4;
+    border-radius: 6px;
+    padding: 10px 8px;
+    background-color: #f8fafc;
+}
+
+.stat-number {
+    font-size: 22pt;
+    font-weight: bold;
+    color: #003366;
+    line-height: 1.1;
+}
+
+.stat-label {
+    font-size: 8pt;
+    color: #888888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+}
+
+.stat-box.highlight .stat-number {
+    color: #f0a500;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 18px;
+    font-size: 9pt;
+}
+
+.data-table thead tr {
+    background-color: #003366;
+    color: #ffffff;
+}
+
+.data-table thead th {
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: bold;
+    font-size: 9pt;
+}
+
+.data-table tbody tr:nth-child(even) {
+    background-color: #f4f7fb;
+}
+
+.data-table tbody tr:nth-child(odd) {
+    background-color: #ffffff;
+}
+
+.data-table tbody td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #e0e8f0;
+}
+
+.data-table tfoot tr {
+    background-color: #eaf0f8;
+    font-weight: bold;
+}
+
+.data-table tfoot td {
+    padding: 7px 10px;
+    border-top: 2px solid #003366;
+}
+
+.amount-box {
+    border: 2px solid #003366;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 34px;
+    background-color: #eaf0f8;
+    display: table;
+    width: 100%;
+}
+
+.amount-label {
+    display: table-cell;
+    font-size: 11pt;
+    font-weight: bold;
+    color: #003366;
+    vertical-align: middle;
+}
+
+.amount-value {
+    display: table-cell;
+    font-size: 16pt;
+    font-weight: bold;
+    color: #003366;
+    text-align: right;
+    vertical-align: middle;
+}
+
+.terms-box {
+    border: 1px solid #d0d8e4;
+    border-radius: 6px;
+    padding: 12px 14px;
+    background-color: #fffdf5;
+    margin-bottom: 18px;
+    font-size: 9pt;
+}
+
+.terms-box h3 {
+    font-size: 10pt;
+    font-weight: bold;
+    color: #003366;
+    margin-bottom: 8px;
+}
+
+.terms-box ol {
+    padding-left: 18px;
+}
+
+.terms-box ol li {
+    margin-bottom: 4px;
+    line-height: 1.5;
+}
+
+.signature-block {
+    width: 100%;
+    margin-top: 90px;
+    text-align: center;
+}
+
+.signature-block-inner {
+    display: table;
+    width: 75%;
+    margin: 0 auto;
+    border-collapse: separate;
+    border-spacing: 30px 0;
+}
+
+.signature-col {
+    display: table-cell;
+    width: 50%;
+    text-align: center;
+}
+
+.signature-line {
+    border-top: 1px solid #333333;
+    margin-top: 40px;
+    padding-top: 6px;
+    font-size: 9pt;
+    color: #444444;
+}
+
+.remarks-box {
+    border-left: 4px solid #f0a500;
+    padding: 8px 12px;
+    background-color: #fffdf5;
+    margin-bottom: 18px;
+    font-size: 9pt;
+    font-style: italic;
+    color: #555555;
+}
