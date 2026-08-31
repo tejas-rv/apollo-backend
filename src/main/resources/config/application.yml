@@ -47,6 +47,10 @@ app:
   email:
     enabled: true
     from: tejas.v008@gmail.com
+    admin-recipients:
+      - tejasv.1si18te052@gmail.com
+      - tejas.rv@outlook.com
+#      - admin3@apolloelevators.in
 
 logging:
   level:

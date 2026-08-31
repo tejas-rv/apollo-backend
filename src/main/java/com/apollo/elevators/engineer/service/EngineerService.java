@@ -15,6 +15,7 @@ import com.apollo.elevators.engineer.model.entity.ServiceReport;
 import com.apollo.elevators.engineer.model.enums.ReportStatus;
 import com.apollo.elevators.engineer.repository.ServiceReportRepository;
 import com.apollo.elevators.notification.email.model.dto.EmailMessageRequest;
+import com.apollo.elevators.notification.email.service.EmailProperties;
 import com.apollo.elevators.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +41,7 @@ public class EngineerService {
     private final UserRepository userRepository;
     private final PdfTemplateService pdfTemplateService;
     private final NotificationService notificationService;
+    private final EmailProperties emailProperties;
 
     /** Resolves user ID from username (for JWT auth context). */
     @Transactional(readOnly = true)
@@ -234,13 +236,26 @@ public class EngineerService {
     }
 
     private void emailReportToAdmin(ServiceReport report, byte[] pdfBytes) {
-        // Look for all ADMIN users to find their emails
-        List<User> admins = userRepository.findAll().stream()
-                .filter(u -> u.getRole().name().equals("ADMIN") && u.getEmail() != null && !u.getEmail().isBlank())
-                .collect(Collectors.toList());
+        Set<String> recipientEmails = new LinkedHashSet<>();
 
-        if (admins.isEmpty()) {
-            log.warn("No admin users with email found — skipping report email. reportId={}", report.getId());
+        userRepository.findAll().stream()
+                .filter(u -> u.getRole().name().equals("ADMIN"))
+                .map(User::getEmail)
+                .filter(email -> email != null && !email.isBlank())
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .forEach(recipientEmails::add);
+
+        if (emailProperties.getAdminRecipients() != null) {
+            emailProperties.getAdminRecipients().stream()
+                    .filter(email -> email != null && !email.isBlank())
+                    .map(String::trim)
+                    .map(String::toLowerCase)
+                    .forEach(recipientEmails::add);
+        }
+
+        if (recipientEmails.isEmpty()) {
+            log.warn("No admin email recipients configured — skipping report email. reportId={}", report.getId());
             return;
         }
 
@@ -254,19 +269,19 @@ public class EngineerService {
                 report.getEngineerName(), report.getCustomerName(), report.getVisitDate(), report.getId()
         );
 
-        for (User admin : admins) {
+        for (String adminEmail : recipientEmails) {
             try {
                 EmailMessageRequest emailReq = new EmailMessageRequest(
-                        admin.getEmail(),
+                        adminEmail,
                         subject,
                         body,
                         "service-report-" + report.getId(),
                         List.of(new EmailMessageRequest.EmailAttachmentRequest(fileName, "application/pdf", base64))
                 );
                 notificationService.sendEmailMessage(emailReq);
-                log.info("Service report emailed to admin. adminEmail={}, reportId={}", admin.getEmail(), report.getId());
+                log.info("Service report emailed to admin. adminEmail={}, reportId={}", adminEmail, report.getId());
             } catch (Exception ex) {
-                log.error("Failed to email report to admin. adminEmail={}, reportId={}", admin.getEmail(), report.getId(), ex);
+                log.error("Failed to email report to admin. adminEmail={}, reportId={}", adminEmail, report.getId(), ex);
             }
         }
     }
@@ -288,7 +303,10 @@ public class EngineerService {
         return new EngineerLiftDto(
                 l.getId(), l.getLiftType(), l.getDriveType(), l.getNumberOfFloors(),
                 l.getCapacityInKg(), l.getCapacityInPersons(), l.getBrand(), l.getLiftModel(),
-                l.getSerialNumber(), l.getDoorType(), l.getYearOfInstallation(),
+                l.getInstallationType(), l.getYearOfInstallation(), l.getSerialNumber(),
+                l.getDoorType(), l.getMachineType(), l.getMachineName(), l.getKw(), l.getAmps(),
+                l.getSpeed(), l.getVoltage(), l.getFrequency(), l.getOsgType(), l.getRatedSpeed(),
+                l.getTrippingSpeed(), l.getIsUpsPresent(), l.getUpsType(), l.getKva(),
                 l.getAmcContracts() == null ? List.of() :
                         l.getAmcContracts().stream().map(this::toEngineerAmc).collect(Collectors.toList())
         );

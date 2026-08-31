@@ -1,13 +1,17 @@
 package com.apollo.elevators.authorization.service;
 
+import com.apollo.elevators.common.exception.ConflictException;
 import com.apollo.elevators.common.exception.ResourceNotFoundException;
 import com.apollo.elevators.common.exception.UnauthorizedException;
+import com.apollo.elevators.authorization.model.dto.CreateEngineerRequest;
 import com.apollo.elevators.authorization.model.dto.PasswordResetRequest;
 import com.apollo.elevators.authorization.model.dto.CurrentUserResponse;
+import com.apollo.elevators.authorization.model.dto.EngineerUserResponse;
 import com.apollo.elevators.authorization.model.dto.LoginRequest;
 import com.apollo.elevators.authorization.model.dto.LoginResponse;
 import com.apollo.elevators.authorization.model.dto.RefreshTokenRequest;
 import com.apollo.elevators.authorization.model.dto.RefreshTokenResponse;
+import com.apollo.elevators.authorization.model.enums.Role;
 import com.apollo.elevators.authorization.repository.UserRepository;
 import com.apollo.elevators.securityconfiguration.service.JwtService;
 import com.apollo.elevators.securityconfiguration.service.SecurityConfigService;
@@ -18,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +37,7 @@ public class AuthService {
     private final SecurityConfigService securityConfigService;
     private final RefreshTokenService refreshTokenService;
     private final PasswordResetService passwordResetService;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
@@ -111,6 +117,35 @@ public class AuthService {
         refreshTokenService.revokeAllActiveTokens(user);
         passwordResetService.resetPassword(request.getUsername(), request.getNewPassword());
         log.info("Password reset completed. userId={}, username={}", user.getId(), user.getUsername());
+    }
+
+    @Transactional
+    public EngineerUserResponse createEngineer(CreateEngineerRequest request) {
+        String username = request.username() == null ? "" : request.username().trim();
+        String password = request.password() == null ? "" : request.password();
+
+        if (username.isBlank()) {
+            throw new IllegalArgumentException("username is required");
+        }
+        if (password.isBlank()) {
+            throw new IllegalArgumentException("password is required");
+        }
+        if (userRepository.existsByUsername(username)) {
+            log.warn("Engineer creation failed due to duplicate username. username={}", username);
+            throw new ConflictException("Username already exists: " + username);
+        }
+
+        User engineer = User.builder()
+                .username(username)
+                .password(passwordEncoder.encode(password))
+                .role(Role.ENGINEER)
+                .enabled(true)
+                .build();
+
+        User savedEngineer = userRepository.save(engineer);
+        log.info("Engineer created. userId={}, username={}, role={}", savedEngineer.getId(), savedEngineer.getUsername(), savedEngineer.getRole().name());
+
+        return new EngineerUserResponse(savedEngineer.getId(), savedEngineer.getUsername(), savedEngineer.getRole().name());
     }
 
     private User findUserByUsername(String username) {
