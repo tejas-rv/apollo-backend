@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Bill - Apollo Elevator Services</title>
+    <style>
+        @font-face {
+            font-family: 'AppFont';
+            src: url('NotoSans-Regular.ttf');
+            font-weight: normal;
+        }
+        @font-face {
+            font-family: 'AppFont';
+            src: url('NotoSans-Bold.ttf');
+            font-weight: bold;
+        }
+        @page {
+            size: A4;
+            margin: 12mm 15mm 15mm 15mm;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'AppFont', Arial, Helvetica, sans-serif;
+            font-size: 10pt;
+            color: #111;
+            background: #fff;
+        }
+
+        /* ---- HEADER ---- */
+        .mobile-right {
+            text-align: right;
+            font-size: 9.5pt;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-bottom: 3px solid #000;
+            padding-bottom: 6px;
+            margin-bottom: 6px;
+        }
+        .header-icon-cell {
+            width: 70px;
+            vertical-align: middle;
+            text-align: center;
+        }
+        .header-icon-cell img {
+            width: 60px;
+        }
+        .header-company-cell {
+            vertical-align: middle;
+            padding-left: 6px;
+        }
+        .company-main-name {
+            font-size: 22pt;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .company-tagline {
+            font-size: 8.5pt;
+            color: #333;
+            text-align: center;
+            border-top: 1px solid #aaa;
+            margin-top: 3px;
+            padding-top: 2px;
+        }
+
+        /* ---- TO / DATE / BILL ---- */
+        .to-section {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            margin-bottom: 8px;
+        }
+        .to-section td { font-size: 10pt; padding: 2px 0; vertical-align: top; }
+        .to-label { font-weight: bold; font-size: 11pt; width: 60px; }
+        .to-right { text-align: right; }
+        .bill-party-name { font-weight: bold; font-size: 11pt; margin-top: 6px; }
+        .bill-party-addr { font-size: 10pt; }
+
+        /* ---- LINE ITEMS TABLE ---- */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .items-table th {
+            border: 1px solid #000;
+            padding: 6px 8px;
+            text-align: center;
+            font-size: 10pt;
+            font-weight: bold;
+        }
+        .items-table td {
+            border: 1px solid #000;
+            padding: 6px 8px;
+            font-size: 10pt;
+            vertical-align: top;
+        }
+        .items-table .sl-col { text-align: center; width: 55px; }
+        .items-table .desc-col { width: 50%; }
+        .items-table .qty-col { text-align: center; width: 70px; }
+        .items-table .rate-col { text-align: right; width: 90px; }
+        .items-table .amount-col { text-align: right; width: 90px; }
+
+        .amount-words-row td {
+            font-size: 9.5pt;
+            font-style: italic;
+            padding-top: 6px;
+        }
+
+        .total-row td {
+            font-weight: bold;
+            border-top: 2px solid #000;
+            text-align: right;
+            font-size: 10.5pt;
+        }
+
+        /* ---- FOOTER ---- */
+        .footer-section {
+            margin-top: 24px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 10.5pt;
+        }
+        .bottom-bar {
+            border-top: 2px solid #000;
+            margin-top: 20px;
+            padding-top: 5px;
+            font-size: 8.5pt;
+            color: #333;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Mobile top right -->
+    <div class="mobile-right">MOBILE:-8971974009</div>
+
+    <!-- HEADER -->
+    <table class="header-table">
+        <tr>
+            <td class="header-icon-cell">
+                <img src="apollo_elevators_icon.png" alt="Apollo"/>
+            </td>
+            <td class="header-company-cell">
+                <div class="company-main-name">APOLLO&nbsp; ELEVATOR SERVICES</div>
+                <div class="company-tagline">WE UNDERTAKE MODERNISATION OF ALL KINDS OF ELEVATORS</div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- TO / DATE / BILL NUMBER -->
+    <table class="to-section">
+        <tr>
+            <td class="to-label">To</td>
+            <td></td>
+            <td class="to-right">
+                <div>DATE:<strong th:text="${bill.invoiceDate}">05/08/2026</strong></div>
+            </td>
+        </tr>
+    </table>
+    <div class="bill-party-name" th:text="${billTo.name}">G R MANSION</div>
+    <div class="bill-party-addr" th:text="${billTo.address}">No 9, 4th cross, 2nd main, Manjushree Layout, BANGALORE - 560036</div>
+
+    <!-- Bill number row -->
+    <table style="width:100%; margin-top:8px;">
+        <tr>
+            <td></td>
+            <td style="text-align:right; font-weight:bold;" th:text="'BILL ' + ${bill.invoiceNumber}">BILL 08/0526</td>
+        </tr>
+    </table>
+
+    <!-- LINE ITEMS TABLE -->
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th class="sl-col">Sl.<br/>no</th>
+                <th class="desc-col">PARTICULARS</th>
+                <th class="qty-col">QTY</th>
+                <th class="rate-col">RATE</th>
+                <th class="amount-col">AMOUNT</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="item : ${lineItems}" style="height:80px;">
+                <td class="sl-col" th:text="${item.slNo != null ? (item.slNo < 10 ? '0' + item.slNo : item.slNo) : ''}">01</td>
+                <td class="desc-col">
+                    <div th:text="${item.description}">Maintenance of elevator for the period</div>
+                    <!-- Amount in words inside description cell -->
+                    <div style="margin-top: 40px; font-style:italic; font-size:9pt;" th:if="${itemStat.last and amountInWords != null}">
+                        (<span th:text="${amountInWords}">FOUR THOUSAND AND FIVE HUNDRED RUPEES ONLY</span>)
+                    </div>
+                </td>
+                <td class="qty-col" th:text="${item.quantity}">01 NO</td>
+                <td class="rate-col" th:text="${item.rate != null ? #numbers.formatDecimal(item.rate, 1, 2) : ''}">4,500.00</td>
+                <td class="amount-col" th:text="${item.amount != null ? #numbers.formatDecimal(item.amount, 1, 2) : ''}">4,500-00</td>
+            </tr>
+            <tr th:if="${lineItems == null or lineItems.isEmpty()}" style="height:80px;">
+                <td class="sl-col"></td>
+                <td class="desc-col"></td>
+                <td class="qty-col"></td>
+                <td class="rate-col"></td>
+                <td class="amount-col"></td>
+            </tr>
+            <!-- Total row -->
+            <tr class="total-row">
+                <td colspan="4" style="text-align:right; border:1px solid #000; padding: 4px 8px;"></td>
+                <td class="amount-col" style="border:1px solid #000;" th:text="${totalAfterTax != null ? #numbers.formatDecimal(totalAfterTax, 1, 2) : ''}">4,500-00</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- FOOTER -->
+    <div class="footer-section">FOR APOLLO ELEVATOR SERVICES</div>
+
+    <!-- BOTTOM BAR -->
+    <div class="bottom-bar">
+        #182,13<sup>TH</sup> CROSS PRASANNA LAYOUT ,MAHADESHWARANAGARA MAIN ROAD, BANGALORE-91<br/>
+        EMAIL:apolloelevatorservices@gmail.com
+    </div>
+
+</body>
+</html>

@@ -1,6 +1,9 @@
 package com.apollo.elevators.documents.controller;
 
 import com.apollo.elevators.common.api.ApiErrorResponse;
+import com.apollo.elevators.documents.model.dto.BillPreviewResponse;
+import com.apollo.elevators.documents.model.dto.BillRequest;
+import com.apollo.elevators.documents.model.enums.DocumentType;
 import com.apollo.elevators.documents.service.DocumentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -9,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -16,7 +20,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -28,47 +35,170 @@ public class DocumentController {
 
     private final DocumentService documentService;
 
-    @GetMapping("/customers/{customerId}/amc-contract")
+    // =========================================================================
+    // AMC CONTRACT  (database-driven)
+    // =========================================================================
+
+    @GetMapping("/customers/{customerId}")
     @Operation(
-            summary = "Generate AMC Contract PDF",
+            summary = "Generate Customer Document PDF",
             description = """
-                    Fetches the customer and their AMC data from the database, renders the
-                    server-side `amc-contract.html` template, and returns a ready-to-download PDF.
+                    Generates a PDF for the given customer.
 
-                    **File name format:** `{customerCode}_apollo_amc_{amcYear}.pdf`
+                    | `documentType`  | Output                      |
+                    |-----------------|-----------------------------|
+                    | `AMC_CONTRACT`  | AMC Contract PDF (default)  |
 
-                    - Picks the first lift of the customer.
-                    - Prefers the **ACTIVE** AMC contract; falls back to the latest by end date.
+                    For bills, use the two-step preview → generate flow below.
                     """
     )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "PDF generated — returned as a downloadable file",
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "PDF generated",
                     content = @Content(mediaType = MediaType.APPLICATION_PDF_VALUE,
-                            schema = @Schema(type = "string", format = "binary"))
-            ),
+                            schema = @Schema(type = "string", format = "binary"))),
+            @ApiResponse(responseCode = "400", description = "Unsupported documentType for this endpoint",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "Customer / lift / AMC not found",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Forbidden (ADMIN role required)",
+            @ApiResponse(responseCode = "403", description = "Forbidden",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
-    public ResponseEntity<byte[]> generateAmcContractPdf(
+    public ResponseEntity<byte[]> generateCustomerDocument(
             @Parameter(description = "Database ID of the customer", required = true)
+            @PathVariable Long customerId,
+            @Parameter(description = "Document type (default: AMC_CONTRACT)")
+            @RequestParam(defaultValue = "AMC_CONTRACT") DocumentType documentType
+    ) {
+        log.info("Document PDF request. customerId={}, documentType={}", customerId, documentType);
+        DocumentService.PdfResult result = documentService.generateCustomerDocument(customerId, documentType);
+        log.info("Document PDF ready. fileName={}, sizeBytes={}", result.fileName(), result.pdfBytes().length);
+        return pdfResponse(result);
+    }
+
+    /** Backward-compatible alias kept so existing callers don't break. */
+    @GetMapping("/customers/{customerId}/amc-contract")
+    @Operation(summary = "Generate AMC Contract PDF (legacy — use GET /customers/{customerId} instead)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "PDF generated",
+                    content = @Content(mediaType = MediaType.APPLICATION_PDF_VALUE,
+                            schema = @Schema(type = "string", format = "binary"))),
+            @ApiResponse(responseCode = "404", description = "Not found",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    public ResponseEntity<byte[]> generateAmcContractPdfLegacy(
             @PathVariable Long customerId
     ) {
-        log.info("AMC contract PDF request received. customerId={}", customerId);
+        return generateCustomerDocument(customerId, DocumentType.AMC_CONTRACT);
+    }
 
-        String fileName = documentService.buildPdfFileName(customerId);
-        byte[] pdfBytes = documentService.generateAmcContractPdf(customerId);
+    // =========================================================================
+    // BILL — STEP 1: PREVIEW  (GET → JSON for UI review)
+    // =========================================================================
 
-        log.info("AMC contract PDF ready. customerId={}, fileName={}, sizeBytes={}", customerId, fileName, pdfBytes.length);
+    @GetMapping("/customers/{customerId}/bill-preview")
+    @Operation(
+            summary = "Preview bill data fetched from the customer's AMC",
+            description = """
+                    **Step 1 of the 2-step bill flow.**
 
+                    Fetches the customer and their active AMC contract from the database and returns
+                    a pre-filled `BillRequest` JSON object for the UI to display and optionally edit.
+
+                    The response object looks like:
+                    ```json
+                    {
+                      "documentType": "GST_BILL",
+                      "billRequest": { ... }
+                    }
+                    ```
+
+                    Once the user has reviewed / edited the data, POST the `billRequest` body to
+                    `POST /bills/generate?documentType=GST_BILL` (or `WITHOUT_GST_BILL`) to produce
+                    the final PDF.
+
+                    **Entity defaults auto-selected by documentType:**
+                    - `GST_BILL`         → `APOLLO_ELEVATOR`          (GSTIN: 29ABPFA4107Q1ZU)
+                    - `WITHOUT_GST_BILL` → `APOLLO_ELEVATOR_SERVICES`
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Pre-filled bill data ready for review",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = BillPreviewResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid documentType",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Customer / lift / AMC not found",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "Forbidden",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    public ResponseEntity<BillPreviewResponse> previewBill(
+            @Parameter(description = "Database ID of the customer", required = true)
+            @PathVariable Long customerId,
+            @Parameter(description = "Bill type: GST_BILL or WITHOUT_GST_BILL", required = true,
+                    schema = @Schema(implementation = DocumentType.class))
+            @RequestParam DocumentType documentType
+    ) {
+        log.info("Bill preview request. customerId={}, documentType={}", customerId, documentType);
+        BillPreviewResponse preview = documentService.buildBillPreview(customerId, documentType);
+        log.info("Bill preview ready. customerId={}, invoiceNumber={}",
+                customerId, preview.billRequest().bill().invoiceNumber());
+        return ResponseEntity.ok(preview);
+    }
+
+    // =========================================================================
+    // BILL — STEP 2: GENERATE PDF  (POST reviewed JSON → PDF)
+    // =========================================================================
+
+    @PostMapping("/bills/generate")
+    @Operation(
+            summary = "Generate Bill PDF from reviewed bill data",
+            description = """
+                    **Step 2 of the 2-step bill flow.**
+
+                    Accepts the `BillRequest` JSON (as returned by — or edited after —
+                    `GET /customers/{customerId}/bill-preview`) and renders it into a PDF.
+
+                    | `documentType`      | Template                                     |
+                    |---------------------|----------------------------------------------|
+                    | `GST_BILL`          | Tax Invoice — Apollo Elevator (with SGST/CGST) |
+                    | `WITHOUT_GST_BILL`  | Plain bill — Apollo Elevator Services         |
+
+                    **Typical UI flow:**
+                    1. `GET /customers/{id}/bill-preview?documentType=GST_BILL` → show JSON to user
+                    2. User reviews / edits fields in the UI
+                    3. `POST /bills/generate?documentType=GST_BILL` with the (edited) body → download PDF
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Bill PDF generated",
+                    content = @Content(mediaType = MediaType.APPLICATION_PDF_VALUE,
+                            schema = @Schema(type = "string", format = "binary"))),
+            @ApiResponse(responseCode = "400", description = "Validation error or wrong documentType",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "Forbidden",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    public ResponseEntity<byte[]> generateBillPdf(
+            @Parameter(description = "Bill type: GST_BILL or WITHOUT_GST_BILL", required = true,
+                    schema = @Schema(implementation = DocumentType.class))
+            @RequestParam DocumentType documentType,
+            @Valid @RequestBody BillRequest billRequest
+    ) {
+        log.info("Bill PDF generate request. documentType={}, invoiceNumber={}, entity={}",
+                documentType, billRequest.bill().invoiceNumber(), billRequest.entity());
+        DocumentService.PdfResult result = documentService.generateBillPdf(documentType, billRequest);
+        log.info("Bill PDF ready. fileName={}, sizeBytes={}", result.fileName(), result.pdfBytes().length);
+        return pdfResponse(result);
+    }
+
+    // -------------------------------------------------------------------------
+
+    private static ResponseEntity<byte[]> pdfResponse(DocumentService.PdfResult result) {
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + result.fileName() + "\"")
                 .contentType(MediaType.APPLICATION_PDF)
-                .contentLength(pdfBytes.length)
-                .body(pdfBytes);
+                .contentLength(result.pdfBytes().length)
+                .body(result.pdfBytes());
     }
 }
-
