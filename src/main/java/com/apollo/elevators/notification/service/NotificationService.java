@@ -489,6 +489,11 @@ public class NotificationService {
         return normalized;
     }
 
+    public NotificationResponse sendBillWhatsAppAsResponse(
+            String phoneNumber, String fileName, byte[] pdfContent, String caption) {
+        return sendWhatsAppPdfDocument(phoneNumber, caption, "bill-send", fileName, pdfContent);
+    }
+
     private String buildEmailMessage(EmailMessageRequest request) {
         return "Subject: " + request.subject().trim() + "\n\n" + request.message().trim();
     }

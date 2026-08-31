@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Service Report</title>
+  <link rel="stylesheet" href="apollo-service-report.css"/>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── Header ── -->
+  <div class="header">
+    <div class="header-brand">
+      <div class="brand-logo">A</div>
+      <div>
+        <div class="brand-name">APOLLO</div>
+        <div class="brand-sub">Elevator Maintenance Services</div>
+        <div class="brand-sub">No. 14, Karihobana Halli, Bengaluru</div>
+      </div>
+    </div>
+    <div class="header-title">
+      <h1>SERVICE VISIT REPORT</h1>
+      <div class="report-id">Report ID: #<span th:text="${report.id}">—</span></div>
+      <div class="report-id">Generated: <span th:text="${generatedAt}">—</span></div>
+    </div>
+  </div>
+
+  <!-- ── Visit Info ── -->
+  <div class="section-title">Visit Information</div>
+  <div class="info-grid">
+    <div class="info-row">
+      <span class="info-label">Engineer:</span>
+      <span class="info-value" th:text="${report.engineerName}">—</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Visit Date:</span>
+      <span class="info-value" th:text="${report.visitDate}">—</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Status:</span>
+      <span class="info-value" th:text="${report.status}">—</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">AMC Contract ID:</span>
+      <span class="info-value" th:text="${report.amcContractId}">—</span>
+    </div>
+  </div>
+
+  <!-- ── Customer Info ── -->
+  <div class="section-title">Customer Information</div>
+  <div class="info-grid">
+    <div class="info-row">
+      <span class="info-label">Customer Name:</span>
+      <span class="info-value" th:text="${customer.customerName}">—</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Customer Code:</span>
+      <span class="info-value" th:text="${customer.customerCode}">—</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Mobile:</span>
+      <span class="info-value" th:text="${customer.mobileNumber}">—</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Address:</span>
+      <span class="info-value" th:text="${customer.address != null ? customer.address : '—'}">—</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">City / State:</span>
+      <span class="info-value"
+            th:text="${(customer.city != null ? customer.city : '') + (customer.state != null ? ', ' + customer.state : '')}">—</span>
+    </div>
+  </div>
+
+  <!-- ── Checklist ── -->
+  <div class="section-title">Service Checklist</div>
+  <table class="checklist-table">
+    <thead>
+      <tr>
+        <th class="q-num">#</th>
+        <th class="q-text">Question</th>
+        <th class="q-ans">Answer</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="item : ${report.checkItems}">
+        <td class="q-num" th:text="${item.itemOrder}">1</td>
+        <td class="q-text" th:text="${item.question}">Question</td>
+        <td class="q-ans">
+          <!-- YES_NO -->
+          <span th:if="${item.answerType.name() == 'YES_NO'}">
+            <span th:if="${item.answerYn != null and item.answerYn}" class="badge-yes">✔ YES</span>
+            <span th:if="${item.answerYn != null and !item.answerYn}" class="badge-no">✘ NO</span>
+            <span th:if="${item.answerYn == null}" style="color:#aaa;">—</span>
+            <span th:if="${item.answerText != null and item.answerText != ''}"
+                  style="display:block;font-size:9.5px;color:#555;margin-top:2px;"
+                  th:text="${item.answerText}">notes</span>
+          </span>
+          <!-- DESCRIPTIVE -->
+          <span th:if="${item.answerType.name() == 'DESCRIPTIVE'}" class="desc-answer"
+                th:text="${item.answerText != null and item.answerText != '' ? item.answerText : '—'}">—</span>
+        </td>
+      </tr>
+      <tr th:if="${report.checkItems == null or report.checkItems.empty}">
+        <td colspan="3" style="text-align:center;color:#999;padding:14px;">No checklist items recorded.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ── Overall Notes ── -->
+  <div class="section-title">Overall Notes / Observations</div>
+  <div class="notes-box"
+       th:text="${report.overallNotes != null and report.overallNotes != '' ? report.overallNotes : 'No additional notes provided.'}">
+    Notes here.
+  </div>
+
+  <!-- ── Signature ── -->
+  <div class="sig-row">
+    <div class="sig-block">
+      <div class="sig-line"></div>
+      <div class="sig-label">Engineer Signature</div>
+      <div style="font-size:10px;margin-top:3px;" th:text="${report.engineerName}">Name</div>
+    </div>
+    <div class="sig-block">
+      <div class="sig-line"></div>
+      <div class="sig-label">Customer / Authorised Signatory</div>
+    </div>
+    <div class="sig-block">
+      <div class="sig-line"></div>
+      <div class="sig-label">Apollo Elevators Stamp</div>
+    </div>
+  </div>
+
+  <!-- ── Footer ── -->
+  <div class="footer">
+    <span>Apollo Elevators &amp; Apollo Elevator Services · Bengaluru</span>
+    <span>Report #<span th:text="${report.id}">0</span> · <span th:text="${report.visitDate}">date</span></span>
+  </div>
+
+</div>
+</body>
+</html>

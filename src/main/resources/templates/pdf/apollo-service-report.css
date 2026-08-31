@@ -1,0 +1,133 @@
+/* apollo-service-report.css — Service Report PDF styles */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11px;
+    color: #1a1a2e;
+    background: #fff;
+}
+
+/* ── Page wrapper ── */
+.page {
+    width: 100%;
+    padding: 20px 28px;
+}
+
+/* ── Header bar ── */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 3px solid #122033;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+}
+.header-brand { display: flex; align-items: center; gap: 12px; }
+.brand-logo {
+    width: 44px; height: 44px;
+    background: #d9a441;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: Georgia, serif;
+    font-size: 22px; font-weight: bold;
+    color: #142238;
+}
+.brand-name { font-size: 16px; font-weight: 700; letter-spacing: 2px; color: #122033; }
+.brand-sub  { font-size: 9px; color: #555; margin-top: 1px; }
+
+.header-title { text-align: right; }
+.header-title h1 { font-size: 18px; font-weight: 700; color: #122033; letter-spacing: 1px; }
+.header-title .report-id { font-size: 10px; color: #888; margin-top: 3px; }
+
+/* ── Section headings ── */
+.section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    background: #122033;
+    padding: 5px 10px;
+    margin: 14px 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+/* ── Info grid ── */
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 20px;
+    margin-bottom: 10px;
+}
+.info-row { display: flex; gap: 6px; font-size: 11px; }
+.info-label { font-weight: 700; color: #444; min-width: 110px; }
+.info-value { color: #1a1a2e; }
+
+/* ── Checklist table ── */
+.checklist-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10.5px;
+    margin-bottom: 12px;
+}
+.checklist-table th {
+    background: #213550;
+    color: #fff;
+    text-align: left;
+    padding: 6px 8px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.checklist-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid #e5e8ed;
+    vertical-align: top;
+}
+.checklist-table tr:nth-child(even) td { background: #f8f9fb; }
+.checklist-table .q-num  { width: 28px; color: #888; font-weight: 700; }
+.checklist-table .q-text { width: 60%; }
+.checklist-table .q-ans  { width: 38%; }
+
+/* YES/NO badge */
+.badge-yes { color: #217746; font-weight: 700; }
+.badge-no  { color: #a33838; font-weight: 700; }
+
+/* Descriptive answer */
+.desc-answer { color: #2a2a3e; line-height: 1.5; }
+
+/* ── Overall notes ── */
+.notes-box {
+    border: 1px solid #d8dde5;
+    border-radius: 5px;
+    padding: 10px 12px;
+    font-size: 11px;
+    color: #1a1a2e;
+    line-height: 1.6;
+    margin-bottom: 12px;
+    min-height: 40px;
+}
+
+/* ── Signature area ── */
+.sig-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 28px;
+    padding-top: 12px;
+    border-top: 1px solid #ccc;
+}
+.sig-block { text-align: center; width: 160px; }
+.sig-line  { border-top: 1px solid #333; width: 100%; margin-bottom: 5px; }
+.sig-label { font-size: 10px; color: #555; }
+
+/* ── Footer ── */
+.footer {
+    margin-top: 18px;
+    border-top: 1px solid #e5e8ed;
+    padding-top: 8px;
+    font-size: 9px;
+    color: #999;
+    display: flex;
+    justify-content: space-between;
+}

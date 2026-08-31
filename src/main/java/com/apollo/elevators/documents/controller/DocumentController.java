@@ -5,6 +5,9 @@ import com.apollo.elevators.documents.model.dto.BillPreviewResponse;
 import com.apollo.elevators.documents.model.dto.BillRequest;
 import com.apollo.elevators.documents.model.enums.DocumentType;
 import com.apollo.elevators.documents.service.DocumentService;
+import com.apollo.elevators.notification.email.model.dto.EmailMessageRequest;
+import com.apollo.elevators.notification.model.dto.NotificationResponse;
+import com.apollo.elevators.notification.service.NotificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -34,6 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class DocumentController {
 
     private final DocumentService documentService;
+    private final NotificationService notificationService;
 
     // =========================================================================
     // AMC CONTRACT  (database-driven)
@@ -190,6 +194,72 @@ public class DocumentController {
         DocumentService.PdfResult result = documentService.generateBillPdf(documentType, billRequest);
         log.info("Bill PDF ready. fileName={}, sizeBytes={}", result.fileName(), result.pdfBytes().length);
         return pdfResponse(result);
+    }
+
+    // =========================================================================
+    // BILL — SEND VIA EMAIL
+    // =========================================================================
+
+    @PostMapping("/bills/send-email")
+    @Operation(
+            summary = "Generate bill PDF and send via email",
+            description = "Generates the bill PDF from the reviewed BillRequest and emails it as an attachment."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Email sent"),
+            @ApiResponse(responseCode = "400", description = "Validation error",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "Forbidden",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    public ResponseEntity<NotificationResponse> sendBillEmail(
+            @Parameter(description = "Bill type: GST_BILL or WITHOUT_GST_BILL", required = true)
+            @RequestParam DocumentType documentType,
+            @Parameter(description = "Recipient email address", required = true)
+            @RequestParam String to,
+            @Valid @RequestBody BillRequest billRequest
+    ) {
+        log.info("Send bill via email. documentType={}, to={}", documentType, to);
+        DocumentService.PdfResult pdf = documentService.generateBillPdf(documentType, billRequest);
+        String base64 = java.util.Base64.getEncoder().encodeToString(pdf.pdfBytes());
+        String subject = "Apollo Elevators – Bill " + billRequest.bill().invoiceNumber();
+        String body = "Dear " + billRequest.billTo().name() + ",\n\nPlease find attached your bill from Apollo Elevators.\n\nRegards,\nApollo Elevators";
+        EmailMessageRequest emailReq = new EmailMessageRequest(
+                to, subject, body, "bill-" + billRequest.bill().invoiceNumber(),
+                java.util.List.of(new EmailMessageRequest.EmailAttachmentRequest(pdf.fileName(), "application/pdf", base64))
+        );
+        NotificationResponse result = notificationService.sendEmailMessage(emailReq);
+        return ResponseEntity.ok(result);
+    }
+
+    // =========================================================================
+    // BILL — SEND VIA WHATSAPP
+    // =========================================================================
+
+    @PostMapping("/bills/send-whatsapp")
+    @Operation(
+            summary = "Generate bill PDF and send via WhatsApp",
+            description = "Generates the bill PDF and sends it as a WhatsApp document message."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "WhatsApp message sent"),
+            @ApiResponse(responseCode = "400", description = "Validation error",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "Forbidden",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    public ResponseEntity<NotificationResponse> sendBillWhatsapp(
+            @Parameter(description = "Bill type: GST_BILL or WITHOUT_GST_BILL", required = true)
+            @RequestParam DocumentType documentType,
+            @Parameter(description = "Recipient phone number in international format", required = true)
+            @RequestParam String phone,
+            @Valid @RequestBody BillRequest billRequest
+    ) {
+        log.info("Send bill via WhatsApp. documentType={}, phone={}", documentType, phone);
+        DocumentService.PdfResult pdf = documentService.generateBillPdf(documentType, billRequest);
+        NotificationResponse result = notificationService.sendBillWhatsAppAsResponse(phone, pdf.fileName(), pdf.pdfBytes(),
+                "Bill " + billRequest.bill().invoiceNumber() + " from Apollo Elevators");
+        return ResponseEntity.ok(result);
     }
 
     // -------------------------------------------------------------------------
