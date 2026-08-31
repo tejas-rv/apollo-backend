@@ -4,6 +4,7 @@ import com.apollo.elevators.customer.model.enums.DoorType;
 import com.apollo.elevators.customer.model.enums.DriveType;
 import com.apollo.elevators.customer.model.enums.LiftType;
 import com.apollo.elevators.customer.model.validation.ValidLiftDetails;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -36,6 +37,7 @@ public class LiftDetails {
     private Integer capacityInPersons;
 
     @Size(max = 100, message = "Brand must not exceed 100 characters")
+    @JsonAlias("make")
     private String brand;
 
     @Size(max = 100, message = "Lift model must not exceed 100 characters")
@@ -88,6 +90,17 @@ public class LiftDetails {
 
     @DecimalMin(value = "0.0", inclusive = true, message = "KVA cannot be negative")
     private BigDecimal kva;
+
+    @Valid
+    @JsonAlias("machineDetails")
+    private MachineDetails machineDetails;
+
+    @Valid
+    @JsonAlias("osg")
+    private OsgDetails osg;
+
+    @Valid
+    private UpsDetails ups;
 
     @Valid
     private List<AmcDetails> amcDetails;

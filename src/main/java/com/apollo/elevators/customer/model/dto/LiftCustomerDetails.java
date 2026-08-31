@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -50,5 +51,10 @@ public class LiftCustomerDetails {
     private String pincode;
 
     @Valid
+    @JsonAlias("clientRepresentative")
+    private List<ClientRepresentativeDetails> clientRepresentative;
+
+    @Valid
+    @JsonAlias("lifts")
     private List<LiftDetails> lifts;
 }

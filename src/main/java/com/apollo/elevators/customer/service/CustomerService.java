@@ -7,10 +7,14 @@ import com.apollo.elevators.customer.model.entity.Customer;
 import com.apollo.elevators.customer.model.entity.Lift;
 import com.apollo.elevators.customer.model.entity.ServiceHistory;
 import com.apollo.elevators.customer.model.dto.AmcDetails;
+import com.apollo.elevators.customer.model.dto.ClientRepresentativeDetails;
 import com.apollo.elevators.customer.model.dto.AmcServiceHistoryRequest;
 import com.apollo.elevators.customer.model.dto.LiftCustomerDetails;
+import com.apollo.elevators.customer.model.dto.MachineDetails;
 import com.apollo.elevators.customer.model.dto.LiftDetails;
+import com.apollo.elevators.customer.model.dto.OsgDetails;
 import com.apollo.elevators.customer.model.dto.ServiceHistoryDetails;
+import com.apollo.elevators.customer.model.dto.UpsDetails;
 import com.apollo.elevators.customer.model.enums.ServiceVisitStatus;
 import com.apollo.elevators.customer.repository.AmcContractRepository;
 import com.apollo.elevators.customer.repository.CustomerRepository;
@@ -343,6 +347,7 @@ public class CustomerService {
             .city(customer.getCity())
             .state(customer.getState())
             .pincode(customer.getPincode())
+            .clientRepresentative(Collections.emptyList())
             .lifts(mapLiftDtos(customer.getLifts()))
             .build();
     }
@@ -533,7 +538,44 @@ public class CustomerService {
             .isUpsPresent(lift.getIsUpsPresent())
             .upsType(lift.getUpsType())
             .kva(lift.getKva())
+            .machineDetails(mapMachineDetails(lift))
+            .osg(mapOsgDetails(lift))
+            .ups(mapUpsDetails(lift))
             .amcDetails(mapAmcDtos(lift.getAmcContracts()))
+            .build();
+    }
+
+    private MachineDetails mapMachineDetails(Lift lift) {
+        return MachineDetails.builder()
+            .manufacturedBy(null)
+            .yearOfManufacture(null)
+            .machineType(lift.getMachineType())
+            .noOfGrooves(null)
+            .frictionSheaveDiameter(null)
+            .noOfRopes(null)
+            .diaOfTheRopeMm(null)
+            .lengthOfTheRopeMm(null)
+            .isDeflectorPulley(null)
+            .deflectorPulley(null)
+            .mainMotor(null)
+            .roping(null)
+            .build();
+    }
+
+    private OsgDetails mapOsgDetails(Lift lift) {
+        return OsgDetails.builder()
+            .make(lift.getOsgType())
+            .diaOfTheRope(null)
+            .ratedSpeed(lift.getRatedSpeed())
+            .trippingSpeed(lift.getTrippingSpeed())
+            .build();
+    }
+
+    private UpsDetails mapUpsDetails(Lift lift) {
+        return UpsDetails.builder()
+            .upsType(lift.getUpsType())
+            .kva(lift.getKva())
+            .battery(null)
             .build();
     }
 
