@@ -1,0 +1,207 @@
+/* ===================================================================
+   apollo-without-gst-bill.css
+   Plain Bill — Apollo Elevator Services (No GST)
+   =================================================================== */
+
+@font-face {
+    font-family: 'AppFont';
+    src: url('NotoSans-Regular.ttf');
+    font-weight: normal;
+}
+@font-face {
+    font-family: 'AppFont';
+    src: url('NotoSans-Bold.ttf');
+    font-weight: bold;
+}
+
+@page {
+    size: A4;
+    margin: 12mm 15mm 15mm 15mm;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'AppFont', Arial, Helvetica, sans-serif;
+    font-size: 10pt;
+    color: #111;
+    background: #fff;
+}
+
+/* ---- MOBILE / TOP RIGHT ---- */
+.mobile-right {
+    text-align: right;
+    font-size: 9.5pt;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+/* ---- HEADER ---- */
+.header-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-bottom: 3px solid #000;
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+}
+
+.header-icon-cell {
+    width: 70px;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.header-icon-cell img {
+    width: 60px;
+}
+
+.header-company-cell {
+    vertical-align: middle;
+    padding-left: 6px;
+}
+
+.company-main-name {
+    font-size: 22pt;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.company-tagline {
+    font-size: 8.5pt;
+    color: #333;
+    text-align: center;
+    border-top: 1px solid #aaa;
+    margin-top: 3px;
+    padding-top: 2px;
+}
+
+/* ---- TO / DATE ---- */
+.to-section {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    margin-bottom: 8px;
+}
+
+.to-section td {
+    font-size: 10pt;
+    padding: 2px 0;
+    vertical-align: top;
+}
+
+.to-label {
+    font-weight: bold;
+    font-size: 11pt;
+    width: 60px;
+}
+
+.to-right {
+    text-align: right;
+}
+
+/* ---- BILL PARTY ---- */
+.bill-party-name {
+    font-weight: bold;
+    font-size: 11pt;
+    margin-top: 6px;
+}
+
+.bill-party-addr {
+    font-size: 10pt;
+}
+
+/* ---- BILL NUMBER ROW ---- */
+.bill-number-table {
+    width: 100%;
+    margin-top: 8px;
+}
+
+.bill-number-table td {
+    font-size: 10pt;
+}
+
+.bill-number-value {
+    text-align: right;
+    font-weight: bold;
+}
+
+/* ---- LINE ITEMS TABLE ---- */
+.items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.items-table th {
+    border: 1px solid #000;
+    padding: 6px 8px;
+    text-align: center;
+    font-size: 10pt;
+    font-weight: bold;
+}
+
+.items-table td {
+    border: 1px solid #000;
+    padding: 6px 8px;
+    font-size: 10pt;
+    vertical-align: top;
+}
+
+.items-table .sl-col     { text-align: center; width: 55px; }
+.items-table .desc-col   { width: 50%; }
+.items-table .qty-col    { text-align: center; width: 70px; }
+.items-table .rate-col   { text-align: right; width: 90px; }
+.items-table .amount-col { text-align: right; width: 90px; }
+
+/* ---- AMOUNT IN WORDS (inside description cell) ---- */
+.amount-words-inline {
+    margin-top: 40px;
+    font-style: italic;
+    font-size: 9pt;
+}
+
+/* ---- TOTAL ROW ---- */
+.total-row td {
+    font-weight: bold;
+    border-top: 2px solid #000;
+    text-align: right;
+    font-size: 10.5pt;
+}
+
+/* ---- FOOTER ---- */
+.footer-section {
+    margin-top: 24px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 10.5pt;
+}
+
+/* ---- BOTTOM ADDRESS BAR ---- */
+.bottom-bar {
+    border-top: 2px solid #000;
+    margin-top: 20px;
+    padding-top: 5px;
+    font-size: 8.5pt;
+    color: #333;
+    text-align: center;
+}
+
+/* ---- ITEM ROW ---- */
+.item-row {
+    height: 80px;
+}
+
+/* ---- TOTAL ROW CELLS ---- */
+.total-spacer {
+    text-align: right;
+    border: 1px solid #000;
+    padding: 4px 8px;
+}
+
+.total-amount-cell {
+    border: 1px solid #000;
+}

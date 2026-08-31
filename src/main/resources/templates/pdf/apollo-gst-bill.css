@@ -1,0 +1,295 @@
+/* ===================================================================
+   apollo-gst-bill.css
+   Tax Invoice — Apollo Elevator (GST Bill)
+   =================================================================== */
+
+@font-face {
+    font-family: 'AppFont';
+    src: url('NotoSans-Regular.ttf');
+    font-weight: normal;
+}
+@font-face {
+    font-family: 'AppFont';
+    src: url('NotoSans-Bold.ttf');
+    font-weight: bold;
+}
+
+@page {
+    size: A4;
+    margin: 15mm 12mm 15mm 12mm;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'AppFont', Arial, Helvetica, sans-serif;
+    font-size: 9.5pt;
+    color: #111;
+    background: #fff;
+}
+
+/* ---- PAGE WRAPPER ---- */
+.page-wrapper {
+    border: 2px solid #333;
+}
+
+/* ---- HEADER ---- */
+.header-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-bottom: 2px solid #333;
+}
+
+.header-logo-cell {
+    width: 90px;
+    padding: 8px 6px;
+    vertical-align: middle;
+    text-align: center;
+    border-right: 1px solid #aaa;
+}
+
+.header-logo-cell img {
+    width: 75px;
+}
+
+.header-company-cell {
+    padding: 8px 10px;
+    vertical-align: middle;
+}
+
+.company-name {
+    font-size: 18pt;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.company-addr {
+    font-size: 9pt;
+}
+
+.company-gstin {
+    font-size: 9pt;
+    font-weight: bold;
+    margin-top: 2px;
+}
+
+/* ---- TAX INVOICE TITLE ---- */
+.invoice-title {
+    text-align: center;
+    font-size: 11pt;
+    font-weight: bold;
+    border-bottom: 1px solid #333;
+    padding: 4px 0;
+    letter-spacing: 2px;
+}
+
+/* ---- INVOICE META ---- */
+.meta-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-bottom: 1px solid #333;
+}
+
+.meta-table td {
+    padding: 3px 6px;
+    font-size: 9pt;
+}
+
+.meta-table .label {
+    font-weight: bold;
+}
+
+.meta-table .border-right {
+    border-right: 1px solid #333;
+}
+
+.meta-table .border-bottom {
+    border-bottom: 1px solid #333;
+}
+
+/* ---- BILL TO ---- */
+.bill-to-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-bottom: 1px solid #333;
+}
+
+.bill-to-table td {
+    padding: 4px 6px;
+    font-size: 9pt;
+    vertical-align: top;
+}
+
+.bill-to-table .section-header {
+    font-weight: bold;
+    font-size: 9.5pt;
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #ccc;
+    text-align: center;
+}
+
+.bill-to-table .right-col {
+    border-left: 1px solid #333;
+}
+
+/* ---- LINE ITEMS ---- */
+.items-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-bottom: 1px solid #333;
+}
+
+.items-table th {
+    background: #f0f0f0;
+    border: 1px solid #aaa;
+    padding: 4px 5px;
+    font-size: 9pt;
+    text-align: center;
+}
+
+.items-table td {
+    border: 1px solid #aaa;
+    padding: 4px 5px;
+    font-size: 9pt;
+    vertical-align: top;
+}
+
+.items-table .sl     { text-align: center; width: 30px; }
+.items-table .desc   { width: 38%; }
+.items-table .hsn    { text-align: center; width: 55px; }
+.items-table .qty    { text-align: center; width: 55px; }
+.items-table .rate   { text-align: right; width: 70px; }
+.items-table .amount { text-align: right; width: 80px; }
+
+/* ---- TOTALS ---- */
+.totals-outer {
+    width: 100%;
+    border-collapse: collapse;
+    border-bottom: 1px solid #333;
+}
+
+.totals-outer td {
+    padding: 3px 6px;
+    font-size: 9pt;
+    vertical-align: top;
+}
+
+.totals-left {
+    width: 55%;
+    border-right: 1px solid #333;
+}
+
+.totals-right {
+    width: 45%;
+}
+
+.totals-right-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.totals-right-table td {
+    padding: 2px 4px;
+    font-size: 9pt;
+}
+
+.totals-right-table .t-label {
+    font-weight: bold;
+}
+
+.totals-right-table .t-value {
+    text-align: right;
+}
+
+.totals-right-table .t-total {
+    font-weight: bold;
+    border-top: 1px solid #333;
+    font-size: 10pt;
+}
+
+/* ---- BANK DETAILS / FOOTER ---- */
+.footer-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.footer-table td {
+    padding: 4px 6px;
+    font-size: 8.5pt;
+    vertical-align: top;
+}
+
+.footer-left {
+    width: 55%;
+    border-right: 1px solid #333;
+}
+
+.footer-right {
+    width: 45%;
+    text-align: right;
+}
+
+.footer-right .for-label {
+    font-weight: bold;
+    font-size: 9.5pt;
+}
+
+.footer-right .auth-sig {
+    margin-top: 28px;
+    font-size: 8.5pt;
+}
+
+.amount-words {
+    font-style: italic;
+    font-size: 8.5pt;
+    margin-bottom: 4px;
+}
+
+.certified-text {
+    font-size: 7.5pt;
+    color: #555;
+    margin-top: 4px;
+}
+
+.bank-details-label {
+    font-weight: bold;
+    margin-top: 6px;
+    font-size: 9pt;
+}
+
+.bank-details-line {
+    font-size: 8.5pt;
+    margin-top: 2px;
+}
+
+.terms-line {
+    font-size: 8.5pt;
+    margin-top: 3px;
+}
+
+/* ---- META TABLE COLUMN WIDTHS ---- */
+.meta-w-sm { width: 12%; }
+.meta-w-md { width: 22%; }
+
+/* ---- BILL-TO LAYOUT ---- */
+.bill-to-left {
+    width: 55%;
+    border-right: 1px solid #333;
+}
+
+.field-label {
+    font-weight: bold;
+}
+
+.field-row {
+    margin-top: 2px;
+}
+
+/* ---- FILLER ROW ---- */
+.filler-row {
+    height: 30px;
+}
