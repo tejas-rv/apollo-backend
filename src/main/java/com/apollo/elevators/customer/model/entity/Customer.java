@@ -81,6 +81,14 @@ public class Customer {
     @JoinColumn(name = "customer_id", nullable = false)
     private List<Lift> lifts = new ArrayList<>();
 
+    @Builder.Default
+    @OneToMany(
+        cascade = CascadeType.ALL,
+        orphanRemoval = true
+    )
+    @JoinColumn(name = "customer_id", nullable = false)
+    private List<ClientRepresentative> clientRepresentatives = new ArrayList<>();
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

@@ -1,13 +1,8 @@
 spring:
   application:
     name: apollo-elevators-backend
-  profiles:
-    default: neon
 
   datasource:
-    url: jdbc:postgresql://ep-ancient-voice-azj0gtoq-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-    username: neondb_owner
-    password: npg_FU5hYwtveqo3
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -38,6 +33,16 @@ server:
 
 app:
   master-key: /RcKGbKF3Che8FLiKq6cuPcsmTPg4ZwKgIXh111eQzI=
+  datasource:
+    primary:
+      url: jdbc:postgresql://ep-ancient-voice-azj0gtoq-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+      username: neondb_owner
+      password: npg_FU5hYwtveqo3
+    fallback:
+      url: jdbc:postgresql://localhost:5432/apollo-elevator-development
+      username: postgres
+      password: Tumakuru@123
+    connect-timeout-seconds: 5
   whatsapp:
     enabled: true
     base-url: ${WHATSAPP_BASE_URL:https://graph.facebook.com}

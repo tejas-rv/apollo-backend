@@ -3,6 +3,7 @@ package com.apollo.elevators.customer.service;
 import com.apollo.elevators.common.exception.ConflictException;
 import com.apollo.elevators.common.exception.ResourceNotFoundException;
 import com.apollo.elevators.customer.model.entity.AmcContract;
+import com.apollo.elevators.customer.model.entity.ClientRepresentative;
 import com.apollo.elevators.customer.model.entity.Customer;
 import com.apollo.elevators.customer.model.entity.Lift;
 import com.apollo.elevators.customer.model.entity.ServiceHistory;
@@ -324,6 +325,7 @@ public class CustomerService {
         );
 
         replaceLiftsInPlace(customer, request.getLifts());
+        replaceClientRepresentativesInPlace(customer, request.getClientRepresentative());
     }
 
     /**
@@ -347,9 +349,53 @@ public class CustomerService {
             .city(customer.getCity())
             .state(customer.getState())
             .pincode(customer.getPincode())
-            .clientRepresentative(Collections.emptyList())
+            .clientRepresentative(mapClientRepresentativeDtos(customer.getClientRepresentatives()))
             .lifts(mapLiftDtos(customer.getLifts()))
             .build();
+    }
+
+    private void replaceClientRepresentativesInPlace(
+        Customer customer,
+        List<ClientRepresentativeDetails> requestedRepresentatives
+    ) {
+        List<ClientRepresentative> targetRepresentatives = customer.getClientRepresentatives();
+        if (targetRepresentatives == null) {
+            targetRepresentatives = new ArrayList<>();
+            customer.setClientRepresentatives(targetRepresentatives);
+        }
+
+        targetRepresentatives.clear();
+        if (requestedRepresentatives != null) {
+            requestedRepresentatives.stream()
+                .filter(Objects::nonNull)
+                .map(this::mapClientRepresentativeEntity)
+                .forEach(targetRepresentatives::add);
+        }
+    }
+
+    private ClientRepresentative mapClientRepresentativeEntity(
+        ClientRepresentativeDetails details
+    ) {
+        return ClientRepresentative.builder()
+            .name(trimToNull(details.getName()))
+            .mobileNumber(trimToNull(details.getMobileNumber()))
+            .build();
+    }
+
+    private List<ClientRepresentativeDetails> mapClientRepresentativeDtos(
+        List<ClientRepresentative> representatives
+    ) {
+        if (representatives == null || representatives.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return representatives.stream()
+            .filter(Objects::nonNull)
+            .map(rep -> ClientRepresentativeDetails.builder()
+                .name(rep.getName())
+                .mobileNumber(rep.getMobileNumber())
+                .build())
+            .toList();
     }
 
     private List<Lift> mapLiftEntities(
@@ -409,7 +455,7 @@ public class CustomerService {
             amcCount
         );
 
-        return Lift.builder()
+        Lift lift = Lift.builder()
             .id(liftDetails.getId())
             .liftType(liftDetails.getLiftType())
             .driveType(liftDetails.getDriveType())
@@ -439,6 +485,51 @@ public class CustomerService {
                 mapAmcEntities(liftDetails.getAmcDetails())
             )
             .build();
+
+        applyMachineDetails(lift, liftDetails.getMachineDetails());
+        applyUpsBattery(lift, liftDetails.getUps());
+
+        return lift;
+    }
+
+    private void applyMachineDetails(Lift lift, MachineDetails machineDetails) {
+        if (machineDetails == null) {
+            return;
+        }
+
+        lift.setManufacturedBy(trimToNull(machineDetails.getManufacturedBy()));
+        lift.setYearOfManufacture(machineDetails.getYearOfManufacture());
+        lift.setNoOfGrooves(machineDetails.getNoOfGrooves());
+        lift.setFrictionSheaveDiameter(machineDetails.getFrictionSheaveDiameter());
+        lift.setNoOfRopes(machineDetails.getNoOfRopes());
+        lift.setDiaOfTheRopeMm(machineDetails.getDiaOfTheRopeMm());
+        lift.setLengthOfTheRopeMm(machineDetails.getLengthOfTheRopeMm());
+        lift.setIsDeflectorPulley(machineDetails.getIsDeflectorPulley());
+        lift.setRoping(trimToNull(machineDetails.getRoping()));
+
+        if (machineDetails.getDeflectorPulley() != null) {
+            lift.setDeflectorPulleyDiameter(machineDetails.getDeflectorPulley().getDiameter());
+            lift.setDeflectorPulleyNoOfGrooves(machineDetails.getDeflectorPulley().getNoOfGrooves());
+        }
+
+        if (machineDetails.getMainMotor() != null) {
+            lift.setMainMotorKw(trimToNull(machineDetails.getMainMotor().getKw()));
+            lift.setMainMotorAmps(trimToNull(machineDetails.getMainMotor().getAmps()));
+            lift.setMainMotorSpeed(trimToNull(machineDetails.getMainMotor().getSpeed()));
+            lift.setMainMotorVoltage(trimToNull(machineDetails.getMainMotor().getVoltage()));
+            lift.setMainMotorFrequency(trimToNull(machineDetails.getMainMotor().getFrequency()));
+            lift.setMainMotorNoOfPoles(machineDetails.getMainMotor().getNoOfPoles());
+        }
+    }
+
+    private void applyUpsBattery(Lift lift, UpsDetails ups) {
+        if (ups == null || ups.getBattery() == null) {
+            return;
+        }
+
+        lift.setBatteryMake(trimToNull(ups.getBattery().getMake()));
+        lift.setBatteryVoltage(trimToNull(ups.getBattery().getVoltage()));
+        lift.setBatteryNoOfBatteries(ups.getBattery().getNoOfBatteries());
     }
 
     private List<AmcContract> mapAmcEntities(
@@ -547,18 +638,32 @@ public class CustomerService {
 
     private MachineDetails mapMachineDetails(Lift lift) {
         return MachineDetails.builder()
-            .manufacturedBy(null)
-            .yearOfManufacture(null)
+            .manufacturedBy(lift.getManufacturedBy())
+            .yearOfManufacture(lift.getYearOfManufacture())
             .machineType(lift.getMachineType())
-            .noOfGrooves(null)
-            .frictionSheaveDiameter(null)
-            .noOfRopes(null)
-            .diaOfTheRopeMm(null)
-            .lengthOfTheRopeMm(null)
-            .isDeflectorPulley(null)
-            .deflectorPulley(null)
-            .mainMotor(null)
-            .roping(null)
+            .noOfGrooves(lift.getNoOfGrooves())
+            .frictionSheaveDiameter(lift.getFrictionSheaveDiameter())
+            .noOfRopes(lift.getNoOfRopes())
+            .diaOfTheRopeMm(lift.getDiaOfTheRopeMm())
+            .lengthOfTheRopeMm(lift.getLengthOfTheRopeMm())
+            .isDeflectorPulley(lift.getIsDeflectorPulley())
+            .deflectorPulley(
+                MachineDetails.DeflectorPulleyDetails.builder()
+                    .diameter(lift.getDeflectorPulleyDiameter())
+                    .noOfGrooves(lift.getDeflectorPulleyNoOfGrooves())
+                    .build()
+            )
+            .mainMotor(
+                MachineDetails.MainMotorDetails.builder()
+                    .kw(lift.getMainMotorKw())
+                    .amps(lift.getMainMotorAmps())
+                    .speed(lift.getMainMotorSpeed())
+                    .voltage(lift.getMainMotorVoltage())
+                    .frequency(lift.getMainMotorFrequency())
+                    .noOfPoles(lift.getMainMotorNoOfPoles())
+                    .build()
+            )
+            .roping(lift.getRoping())
             .build();
     }
 
@@ -575,7 +680,13 @@ public class CustomerService {
         return UpsDetails.builder()
             .upsType(lift.getUpsType())
             .kva(lift.getKva())
-            .battery(null)
+            .battery(
+                UpsDetails.BatteryDetails.builder()
+                    .make(lift.getBatteryMake())
+                    .voltage(lift.getBatteryVoltage())
+                    .noOfBatteries(lift.getBatteryNoOfBatteries())
+                    .build()
+            )
             .build();
     }
 

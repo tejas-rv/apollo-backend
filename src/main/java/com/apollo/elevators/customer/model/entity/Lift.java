@@ -108,6 +108,66 @@ public class Lift {
     @Column(name = "kva", precision = 10, scale = 2)
     private java.math.BigDecimal kva;
 
+    @Column(name = "manufactured_by", length = 100)
+    private String manufacturedBy;
+
+    @Column(name = "year_of_manufacture")
+    private Integer yearOfManufacture;
+
+    @Column(name = "no_of_grooves")
+    private Integer noOfGrooves;
+
+    @Column(name = "friction_sheave_diameter")
+    private Integer frictionSheaveDiameter;
+
+    @Column(name = "no_of_ropes")
+    private Integer noOfRopes;
+
+    @Column(name = "dia_of_the_rope_mm")
+    private Integer diaOfTheRopeMm;
+
+    @Column(name = "length_of_the_rope_mm")
+    private Integer lengthOfTheRopeMm;
+
+    @Column(name = "is_deflector_pulley")
+    private Boolean isDeflectorPulley;
+
+    @Column(name = "deflector_pulley_diameter")
+    private Integer deflectorPulleyDiameter;
+
+    @Column(name = "deflector_pulley_no_of_grooves")
+    private Integer deflectorPulleyNoOfGrooves;
+
+    @Column(name = "roping", length = 50)
+    private String roping;
+
+    @Column(name = "main_motor_kw", length = 50)
+    private String mainMotorKw;
+
+    @Column(name = "main_motor_amps", length = 50)
+    private String mainMotorAmps;
+
+    @Column(name = "main_motor_speed", length = 50)
+    private String mainMotorSpeed;
+
+    @Column(name = "main_motor_voltage", length = 50)
+    private String mainMotorVoltage;
+
+    @Column(name = "main_motor_frequency", length = 50)
+    private String mainMotorFrequency;
+
+    @Column(name = "main_motor_no_of_poles")
+    private Integer mainMotorNoOfPoles;
+
+    @Column(name = "battery_make", length = 100)
+    private String batteryMake;
+
+    @Column(name = "battery_voltage", length = 50)
+    private String batteryVoltage;
+
+    @Column(name = "battery_no_of_batteries")
+    private Integer batteryNoOfBatteries;
+
     @Builder.Default
     @OneToMany(
         cascade = CascadeType.ALL,
