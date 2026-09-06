@@ -307,6 +307,13 @@ public class EngineerService {
                 l.getDoorType(), l.getMachineType(), l.getMachineName(), l.getKw(), l.getAmps(),
                 l.getSpeed(), l.getVoltage(), l.getFrequency(), l.getOsgType(), l.getRatedSpeed(),
                 l.getTrippingSpeed(), l.getIsUpsPresent(), l.getUpsType(), l.getKva(),
+                l.getManufacturedBy(), l.getYearOfManufacture(), l.getNoOfGrooves(),
+                l.getFrictionSheaveDiameter(), l.getNoOfRopes(), l.getDiaOfTheRopeMm(),
+                l.getLengthOfTheRopeMm(), l.getIsDeflectorPulley(), l.getDeflectorPulleyDiameter(),
+                l.getDeflectorPulleyNoOfGrooves(), l.getRoping(),
+                l.getMainMotorKw(), l.getMainMotorAmps(), l.getMainMotorSpeed(),
+                l.getMainMotorVoltage(), l.getMainMotorFrequency(), l.getMainMotorNoOfPoles(),
+                l.getBatteryMake(), l.getBatteryVoltage(), l.getBatteryNoOfBatteries(),
                 l.getAmcContracts() == null ? List.of() :
                         l.getAmcContracts().stream().map(this::toEngineerAmc).collect(Collectors.toList())
         );
