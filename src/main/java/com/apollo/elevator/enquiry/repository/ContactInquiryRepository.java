@@ -15,11 +15,11 @@ public interface ContactInquiryRepository
     @Query("""
             SELECT c
             FROM ContactInquiry c
-            WHERE (:name IS NULL OR LOWER(c.fullName) LIKE LOWER(CONCAT('%', :name, '%')))
-              AND (:phone IS NULL OR c.phoneNumber LIKE CONCAT('%', :phone, '%'))
-              AND (:status IS NULL OR c.status = :status)
-              AND (:from IS NULL OR c.createdAt >= :from)
-              AND (:to IS NULL OR c.createdAt <= :to)
+            WHERE (CAST(:name AS string) IS NULL OR LOWER(c.fullName) LIKE LOWER(CONCAT('%', CAST(:name AS string), '%')))
+              AND (CAST(:phone AS string) IS NULL OR c.phoneNumber LIKE CONCAT('%', CAST(:phone AS string), '%'))
+              AND (CAST(:status AS string) IS NULL OR c.status = :status)
+              AND (CAST(:from AS timestamp) IS NULL OR c.createdAt >= :from)
+              AND (CAST(:to AS timestamp) IS NULL OR c.createdAt <= :to)
             """)
     Page<ContactInquiry> search(
             @Param("name") String name,

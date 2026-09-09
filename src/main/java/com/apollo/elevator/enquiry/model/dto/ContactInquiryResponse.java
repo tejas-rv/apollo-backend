@@ -17,5 +17,6 @@ public record ContactInquiryResponse(
         String sourcePage,
         InquiryStatus status,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        String modifiedBy
 ) {}

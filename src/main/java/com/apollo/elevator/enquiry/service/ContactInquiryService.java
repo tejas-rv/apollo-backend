@@ -82,11 +82,12 @@ public class ContactInquiryService {
     }
 
     @Transactional
-    public ContactInquiryResponse updateStatus(Long id, InquiryStatus status) {
+    public ContactInquiryResponse updateStatus(Long id, InquiryStatus status, String modifiedBy) {
         ContactInquiry inquiry = loadOrThrow(id);
         inquiry.setStatus(status);
+        inquiry.setModifiedBy(modifiedBy);
         inquiry = contactInquiryRepository.save(inquiry);
-        log.info("Contact inquiry status updated. inquiryId={}, status={}", inquiry.getId(), inquiry.getStatus());
+        log.info("Contact inquiry status updated. inquiryId={}, status={}, modifiedBy={}", inquiry.getId(), inquiry.getStatus(), modifiedBy);
         return toResponse(inquiry);
     }
 
@@ -166,7 +167,8 @@ public class ContactInquiryService {
                 inquiry.getSourcePage(),
                 inquiry.getStatus(),
                 inquiry.getCreatedAt(),
-                inquiry.getUpdatedAt()
+                inquiry.getUpdatedAt(),
+                inquiry.getModifiedBy()
         );
     }
 }

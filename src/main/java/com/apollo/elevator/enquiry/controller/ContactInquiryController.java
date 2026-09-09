@@ -24,6 +24,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -101,10 +102,12 @@ public class ContactInquiryController {
     })
     public ResponseEntity<ContactInquiryResponse> updateStatus(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateStatusRequest request
+            @Valid @RequestBody UpdateStatusRequest request,
+            Authentication authentication
     ) {
-        log.info("Admin inquiry status update requested. inquiryId={}, status={}", id, request.status());
-        ContactInquiryResponse response = contactInquiryService.updateStatus(id, request.status());
+        String modifiedBy = authentication != null ? authentication.getName() : "unknown";
+        log.info("Admin inquiry status update requested. inquiryId={}, status={}, modifiedBy={}", id, request.status(), modifiedBy);
+        ContactInquiryResponse response = contactInquiryService.updateStatus(id, request.status(), modifiedBy);
         log.info("Admin inquiry status update completed. inquiryId={}, status={}", id, response.status());
         return ResponseEntity.ok(response);
     }

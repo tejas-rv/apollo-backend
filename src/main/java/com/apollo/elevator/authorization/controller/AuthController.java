@@ -2,6 +2,7 @@ package com.apollo.elevator.authorization.controller;
 
 import com.apollo.elevator.common.api.ApiErrorResponse;
 import com.apollo.elevator.authorization.service.AuthService;
+import com.apollo.elevator.authorization.model.dto.ChangePasswordRequest;
 import com.apollo.elevator.authorization.model.dto.PasswordResetRequest;
 import com.apollo.elevator.authorization.model.dto.CurrentUserResponse;
 import com.apollo.elevator.authorization.model.dto.LoginRequest;
@@ -101,5 +102,25 @@ public class AuthController {
         log.info("Auth reset-password completed. username={}", request.getUsername());
 
         return ResponseEntity.ok("Password reset successfully");
+    }
+
+    @PutMapping("/change-password")
+    @Operation(summary = "Change own password", description = "Authenticated endpoint for a user to change their own password, verifying the current password first")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Password changed successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid request",
+            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+        @ApiResponse(responseCode = "401", description = "Current password is incorrect",
+            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    public ResponseEntity<String> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            Authentication authentication) {
+        String username = authentication.getName();
+        log.info("Auth change-password request received. username={}", username);
+        authService.changePassword(username, request);
+        log.info("Auth change-password completed. username={}", username);
+
+        return ResponseEntity.ok("Password changed successfully");
     }
 }

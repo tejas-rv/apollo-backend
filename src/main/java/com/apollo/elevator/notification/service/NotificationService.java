@@ -24,6 +24,7 @@ import com.apollo.elevator.documents.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -47,7 +48,7 @@ public class NotificationService {
     private final PdfTemplateService pdfTemplateService;
     private final DocumentService documentService;
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public NotificationResponse sendWhatsAppMessage(WhatsAppMessageRequest request) {
         log.info(
                 "Preparing WhatsApp notification. phoneNumber={}, messageLength={}, referenceKey={}",
@@ -108,7 +109,7 @@ public class NotificationService {
         }
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public NotificationResponse sendEmailMessage(EmailMessageRequest request) {
         log.info(
                 "Preparing email notification. email={}, subjectLength={}, messageLength={}, referenceKey={}, attachmentCount={}",
@@ -322,7 +323,7 @@ public class NotificationService {
     // Clean notification API — 4 public methods exposed via controller
     // =========================================================================
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public NotificationResponse sendPlainEmail(PlainEmailRequest request) {
         log.info("Plain email request. email={}, subject={}", request.email(), request.subject());
         NotificationLog notificationLog = NotificationLog.builder()
@@ -355,7 +356,7 @@ public class NotificationService {
         }
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public NotificationResponse sendContractEmail(ContractEmailRequest request) {
         log.info("Contract email request. customerId={}, email={}", request.customerId(), request.email());
         DocumentService.AmcContractPdfResult pdf = documentService.generateAmcContractPdfResult(request.customerId());
@@ -398,7 +399,7 @@ public class NotificationService {
         }
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public NotificationResponse sendPlainWhatsApp(PlainWhatsAppRequest request) {
         String recipient = normalizePhoneNumber(request.phoneNumber());
         log.info("Plain WhatsApp request. recipient={}", recipient);

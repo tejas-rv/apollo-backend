@@ -3,6 +3,7 @@ package com.apollo.elevator.authorization.service;
 import com.apollo.elevator.common.exception.ConflictException;
 import com.apollo.elevator.common.exception.ResourceNotFoundException;
 import com.apollo.elevator.common.exception.UnauthorizedException;
+import com.apollo.elevator.authorization.model.dto.ChangePasswordRequest;
 import com.apollo.elevator.authorization.model.dto.CreateEngineerRequest;
 import com.apollo.elevator.authorization.model.dto.PasswordResetRequest;
 import com.apollo.elevator.authorization.model.dto.CurrentUserResponse;
@@ -117,6 +118,19 @@ public class AuthService {
         refreshTokenService.revokeAllActiveTokens(user);
         passwordResetService.resetPassword(request.getUsername(), request.getNewPassword());
         log.info("Password reset completed. userId={}, username={}", user.getId(), user.getUsername());
+    }
+
+    @Transactional
+    public void changePassword(String username, ChangePasswordRequest request) {
+        log.info("Change password started. username={}", username);
+        User user = findUserByUsername(username);
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            log.warn("Change password failed due to incorrect current password. username={}", username);
+            throw new UnauthorizedException("Current password is incorrect");
+        }
+        refreshTokenService.revokeAllActiveTokens(user);
+        passwordResetService.resetPassword(username, request.newPassword());
+        log.info("Change password completed. userId={}, username={}", user.getId(), user.getUsername());
     }
 
     @Transactional

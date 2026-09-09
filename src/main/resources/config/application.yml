@@ -27,6 +27,10 @@ spring:
           auth: true
           starttls:
             enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 server:
   port: 9071
@@ -69,6 +73,9 @@ management:
   endpoint:
     health:
       show-details: never
+  health:
+    mail:
+      enabled: false
 
 springdoc:
   api-docs:

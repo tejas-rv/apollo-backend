@@ -68,6 +68,9 @@ public class ContactInquiry {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "modified_by", length = 150)
+    private String modifiedBy;
+
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();

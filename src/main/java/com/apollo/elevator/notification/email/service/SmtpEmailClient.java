@@ -3,7 +3,6 @@ package com.apollo.elevator.notification.email.service;
 import com.apollo.elevator.common.exception.NotificationDeliveryException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -17,7 +16,6 @@ import java.util.List;
 import java.util.UUID;
 
 @Component
-@Profile("!dev")
 @RequiredArgsConstructor
 @Slf4j
 public class SmtpEmailClient implements EmailClient {
