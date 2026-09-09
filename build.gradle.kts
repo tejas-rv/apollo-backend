@@ -8,7 +8,7 @@ plugins {
 
 group = "com.apollo"
 version = "0.0.1-SNAPSHOT"
-description = "Apollo Elevators - Admin & Engineer Backend API"
+description = "Apollo Elevator - Admin & Engineer Backend API"
 
 java {
     toolchain {
@@ -18,7 +18,7 @@ java {
 
 val externalBuildDirectory = System.getenv("APOLLO_BUILD_DIR")
     ?: System.getenv("LOCALAPPDATA")?.let {
-        "$it\\ApolloElevators\\gradle-build\\${rootProject.name}"
+        "$it\\ApolloElevator\\gradle-build\\${rootProject.name}"
     }
 
 if (!externalBuildDirectory.isNullOrBlank()) {

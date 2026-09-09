@@ -7,10 +7,10 @@ app:
     enabled: true
     from: tejas.rv@outlook.com
     admin-recipients:
-      - admin1@apolloelevators.in
-      - admin2@apolloelevators.in
-      - admin3@apolloelevators.in
+      - admin1@apolloelevator.in
+      - admin2@apolloelevator.in
+      - admin3@apolloelevator.in
 
 logging:
   level:
-    com.apollo.elevators: DEBUG
+    com.apollo.elevator: DEBUG

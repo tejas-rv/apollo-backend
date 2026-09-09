@@ -1,7 +1,0 @@
-package com.apollo.elevators.authorization.model.dto;
-
-import jakarta.validation.constraints.NotBlank;
-
-public record RefreshTokenRequest(
-        @NotBlank(message = "Refresh token is required") String refreshToken
-) {}

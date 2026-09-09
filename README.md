@@ -1,4 +1,4 @@
-# Apollo Elevators — Backend
+# Apollo Elevator — Backend
 
 Java 21 + Spring Boot 4.1 + Gradle. JWT auth, with the JWT secret and other
 sensitive config stored in the database rather than in `application.yml`.

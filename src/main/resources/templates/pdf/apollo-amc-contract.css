@@ -53,7 +53,7 @@ body {
 }
 
 .header-logo {
-    /* apollo_elevators_logo.png is the trimmed icon+wordmark+tagline
+    /* apollo_elevator_logo.png is the trimmed icon+wordmark+tagline
        lockup, natural aspect ratio ~1.24:1 (wide) */
     max-width: 120px;
     max-height: 95px;
@@ -146,7 +146,7 @@ body {
         font-family: 'AppFont', Arial, Helvetica, sans-serif;
     }
     @bottom-left {
-        content: "Apollo Elevators — Confidential";
+        content: "Apollo Elevator — Confidential";
         font-size: 8pt;
         color: #888888;
         font-family: 'AppFont', Arial, Helvetica, sans-serif;

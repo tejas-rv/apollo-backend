@@ -1,1 +1,1 @@
-rootProject.name = "apollo-elevators-backend"
+rootProject.name = "apollo-elevator-backend"

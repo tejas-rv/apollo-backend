@@ -1,0 +1,13 @@
+package com.apollo.elevator;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
+@SpringBootApplication
+@EnableScheduling
+public class ApolloElevatorApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(ApolloElevatorApplication.class, args);
+    }
+}
