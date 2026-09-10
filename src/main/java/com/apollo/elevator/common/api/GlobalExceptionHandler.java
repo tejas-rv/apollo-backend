@@ -1,9 +1,11 @@
 package com.apollo.elevator.common.api;
 
 import com.apollo.elevator.common.exception.ConflictException;
+import com.apollo.elevator.common.exception.InvalidGstPercentageException;
 import com.apollo.elevator.common.exception.NotificationDeliveryException;
 import com.apollo.elevator.common.exception.ResourceNotFoundException;
 import com.apollo.elevator.common.exception.UnauthorizedException;
+import com.apollo.elevator.common.exception.UnsupportedDocumentTypeException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Instant;
@@ -18,6 +20,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 @Slf4j
@@ -66,6 +69,47 @@ public class GlobalExceptionHandler {
             exception.getMessage()
         );
         return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request, Map.of());
+    }
+
+    @ExceptionHandler(UnsupportedDocumentTypeException.class)
+    public ResponseEntity<ApiErrorResponse> handleUnsupportedDocumentType(
+            UnsupportedDocumentTypeException exception,
+            HttpServletRequest request
+    ) {
+        log.warn(
+            "Unsupported document type for path={}: {}",
+            request.getRequestURI(),
+            exception.getMessage()
+        );
+        return buildResponse(HttpStatus.BAD_REQUEST, exception.getErrorCode(), exception.getMessage(), request, Map.of());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiErrorResponse> handleTypeMismatch(
+            MethodArgumentTypeMismatchException exception,
+            HttpServletRequest request
+    ) {
+        Object value = exception.getValue();
+        String rawValue = value == null ? "" : value.toString();
+        if ("WITHOUT_GST_BILL".equalsIgnoreCase(rawValue)) {
+            log.warn("Unsupported document type requested for path={}: {}", request.getRequestURI(), rawValue);
+            return buildResponse(HttpStatus.BAD_REQUEST, "UNSUPPORTED_DOCUMENT_TYPE", "Only GST_BILL is supported.", request, Map.of());
+        }
+        log.warn("Type mismatch for path={}: {}", request.getRequestURI(), exception.getMessage());
+        return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request, Map.of());
+    }
+
+    @ExceptionHandler(InvalidGstPercentageException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidGstPercentage(
+            InvalidGstPercentageException exception,
+            HttpServletRequest request
+    ) {
+        log.warn(
+            "Invalid GST percentage for path={}: {}",
+            request.getRequestURI(),
+            exception.getMessage()
+        );
+        return buildResponse(HttpStatus.BAD_REQUEST, exception.getErrorCode(), exception.getMessage(), request, Map.of());
     }
 
     @ExceptionHandler({IllegalArgumentException.class, NotificationDeliveryException.class})
@@ -139,15 +183,24 @@ public class GlobalExceptionHandler {
             HttpServletRequest request,
             Map<String, String> validationErrors
     ) {
+        return buildResponse(status, status.getReasonPhrase(), message, request, validationErrors);
+    }
+
+    private ResponseEntity<ApiErrorResponse> buildResponse(
+            HttpStatus status,
+            String errorCode,
+            String message,
+            HttpServletRequest request,
+            Map<String, String> validationErrors
+    ) {
         ApiErrorResponse body = new ApiErrorResponse(
                 Instant.now(),
                 status.value(),
-                status.getReasonPhrase(),
+                errorCode,
                 message,
                 request.getRequestURI(),
                 validationErrors
         );
-        // Force JSON content type so errors from binary endpoints (PDF etc.) are readable.
         return ResponseEntity.status(status)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(body);

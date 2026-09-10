@@ -21,8 +21,8 @@ public class ServiceReport {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** FK to amc_contract.id */
-    @Column(name = "amc_contract_id", nullable = false)
+    /** Internal reference to the resolved AMC contract when available. */
+    @Column(name = "amc_contract_id")
     private Long amcContractId;
 
     /** FK to app_user.id — the engineer who submitted */

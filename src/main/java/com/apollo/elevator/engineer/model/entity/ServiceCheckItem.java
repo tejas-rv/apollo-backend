@@ -27,11 +27,11 @@ public class ServiceCheckItem {
     @Column(name = "answer_type", nullable = false, length = 20)
     private AnswerType answerType;
 
-    /** Populated when answerType = YES_NO */
+    /** Populated when answerType is YES_NO / YES_NO_NA; null means NA */
     @Column(name = "answer_yn")
     private Boolean answerYn;
 
-    /** Populated when answerType = DESCRIPTIVE, or as additional notes for YES_NO items */
+    /** Populated for descriptive notes or as additional notes for yes/no answers */
     @Column(name = "answer_text", length = 1000)
     private String answerText;
 }

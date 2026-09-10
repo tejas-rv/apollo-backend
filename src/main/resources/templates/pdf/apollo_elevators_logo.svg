@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="535"
+     height="369"
+     viewBox="0 0 535 369">
+
+    <!-- UP ARROW -->
+    <polygon
+            points="250,18 305,75 278,75 278,150 222,150 222,75 195,75"
+            fill="#0A4DA6"/>
+
+    <!-- DOWN ARROW -->
+    <rect
+            x="222"
+            y="225"
+            width="56"
+            height="66"
+            fill="#0A4DA6"/>
+
+    <polygon
+            points="195,303 222,303 222,290 278,290 278,303 305,303 250,363"
+            fill="#0A4DA6"/>
+
+    <!-- APOLLO -->
+    <text
+            x="255"
+            y="215"
+            text-anchor="middle"
+            font-family="Arial, Helvetica, sans-serif"
+            font-size="75"
+            font-weight="800"
+            fill="#0A4DA6">
+        APOLLO
+    </text>
+
+</svg>

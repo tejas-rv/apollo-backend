@@ -1,9 +1,13 @@
 package com.apollo.elevator.enquiry.service;
 
+import com.apollo.elevator.common.exception.ConflictException;
 import com.apollo.elevator.common.exception.NotificationDeliveryException;
 import com.apollo.elevator.common.exception.ResourceNotFoundException;
+import com.apollo.elevator.customer.model.dto.LiftCustomerDetails;
+import com.apollo.elevator.customer.service.CustomerService;
 import com.apollo.elevator.enquiry.model.dto.ContactInquiryRequest;
 import com.apollo.elevator.enquiry.model.dto.ContactInquiryResponse;
+import com.apollo.elevator.enquiry.model.dto.CustomerConversionResponse;
 import com.apollo.elevator.enquiry.model.dto.SubmitInquiryResponse;
 import com.apollo.elevator.enquiry.model.entity.ContactInquiry;
 import com.apollo.elevator.enquiry.model.enums.InquiryStatus;
@@ -11,6 +15,11 @@ import com.apollo.elevator.enquiry.repository.ContactInquiryRepository;
 import com.apollo.elevator.notification.email.model.dto.PlainEmailRequest;
 import com.apollo.elevator.notification.email.service.EmailProperties;
 import com.apollo.elevator.notification.service.NotificationService;
+import com.apollo.elevator.quotation.model.enums.QuotationStatus;
+import com.apollo.elevator.quotation.repository.QuotationRepository;
+import com.apollo.elevator.workorder.model.entity.WorkOrder;
+import com.apollo.elevator.workorder.model.enums.WorkOrderStatus;
+import com.apollo.elevator.workorder.repository.WorkOrderRepository;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +34,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class ContactInquiryService {
 
     private final ContactInquiryRepository contactInquiryRepository;
+    private final QuotationRepository quotationRepository;
+    private final WorkOrderRepository workOrderRepository;
+    private final CustomerService customerService;
     private final NotificationService notificationService;
     private final EmailProperties emailProperties;
 
@@ -84,6 +96,24 @@ public class ContactInquiryService {
     @Transactional
     public ContactInquiryResponse updateStatus(Long id, InquiryStatus status, String modifiedBy) {
         ContactInquiry inquiry = loadOrThrow(id);
+        InquiryStatus currentStatus = inquiry.getStatus();
+
+        if (status == null) {
+            throw new IllegalArgumentException("Status is required");
+        }
+        if (currentStatus == InquiryStatus.COMPLETED || currentStatus == InquiryStatus.CLOSED) {
+            throw new IllegalArgumentException("Status changes are not allowed after the enquiry is completed or closed.");
+        }
+        if (status == InquiryStatus.COMPLETED) {
+            throw new IllegalArgumentException("An enquiry cannot be marked COMPLETED directly from this endpoint. Use the customer conversion flow.");
+        }
+        if (!currentStatus.canTransitionTo(status)) {
+            throw new IllegalArgumentException(currentStatus.invalidTransitionMessage(status));
+        }
+        if (status == InquiryStatus.WORK_ORDER && !hasAcceptedQuotation(id)) {
+            throw new IllegalArgumentException("IN_PROGRESS enquiries can only move to WORK_ORDER when a quotation has been accepted.");
+        }
+
         inquiry.setStatus(status);
         inquiry.setModifiedBy(modifiedBy);
         inquiry = contactInquiryRepository.save(inquiry);
@@ -91,9 +121,77 @@ public class ContactInquiryService {
         return toResponse(inquiry);
     }
 
+    @Transactional
+    public CustomerConversionResponse convertToCustomer(Long enquiryId, LiftCustomerDetails request, String modifiedBy) {
+        if (request == null) {
+            throw new IllegalArgumentException("Customer payload is required");
+        }
+
+        ContactInquiry inquiry = loadOrThrow(enquiryId);
+        if (inquiry.getStatus() != InquiryStatus.WORK_ORDER) {
+            throw new IllegalArgumentException("Only enquiries in WORK_ORDER status can be converted to customer.");
+        }
+        if (inquiry.getCustomerId() != null || inquiry.getStatus() == InquiryStatus.COMPLETED) {
+            throw new ConflictException("Customer conversion already completed for enquiry id: " + enquiryId);
+        }
+
+        if (request.getCustomerName() == null || request.getCustomerName().isBlank()) {
+            throw new IllegalArgumentException("Customer name is required");
+        }
+        if (request.getMobileNumber() == null || request.getMobileNumber().isBlank()) {
+            throw new IllegalArgumentException("Mobile number is required");
+        }
+        if (request.getLifts() == null || request.getLifts().isEmpty()) {
+            throw new IllegalArgumentException("At least one lift is required");
+        }
+        for (var lift : request.getLifts()) {
+            if (lift == null || lift.getNumberOfFloors() == null || lift.getNumberOfFloors() < 1) {
+                throw new IllegalArgumentException("Each lift must include a valid number of floors");
+            }
+        }
+
+        WorkOrder workOrder = workOrderRepository.findByEnquiryId(enquiryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Work order not found for enquiry id: " + enquiryId));
+        if (workOrder.getStatus() != WorkOrderStatus.ACTIVE && workOrder.getStatus() != WorkOrderStatus.APPROVED) {
+            throw new IllegalArgumentException("Work order must be active or approved before converting to customer.");
+        }
+
+        String customerCode = request.getCustomerCode() == null || request.getCustomerCode().isBlank()
+                ? generateCustomerCode(request.getCustomerName())
+                : request.getCustomerCode().trim();
+        request.setCustomerCode(customerCode);
+
+        Long customerId = customerService.createCustomer(request).getId();
+        inquiry.setCustomerId(customerId);
+        inquiry.setStatus(InquiryStatus.COMPLETED);
+        inquiry.setModifiedBy(modifiedBy);
+        contactInquiryRepository.save(inquiry);
+
+        workOrder.setStatus(WorkOrderStatus.COMPLETED);
+        workOrder.setUpdatedBy(modifiedBy);
+        workOrderRepository.save(workOrder);
+
+        log.info("Enquiry converted to customer. enquiryId={}, customerId={}, modifiedBy={}",
+                enquiryId, customerId, modifiedBy);
+        return new CustomerConversionResponse(enquiryId, customerId, "COMPLETED");
+    }
+
     private ContactInquiry loadOrThrow(Long id) {
         return contactInquiryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Inquiry not found with id: " + id));
+    }
+
+    private boolean hasAcceptedQuotation(Long enquiryId) {
+        return quotationRepository.existsByEnquiryIdAndStatus(enquiryId, QuotationStatus.ACCEPTED);
+    }
+
+    private String generateCustomerCode(String fullName) {
+        String normalized = fullName == null ? "CUSTOMER" : fullName.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
+        if (normalized.isBlank()) {
+            normalized = "CUSTOMER";
+        }
+        String prefix = normalized.length() > 20 ? normalized.substring(0, 20) : normalized;
+        return prefix + "-" + System.currentTimeMillis();
     }
 
     private void sendAdminNotification(ContactInquiry inquiry) {

@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 /**
- * Request DTO for generating GST Bill or Without-GST Bill PDFs.
+ * Request DTO for generating GST Bill PDFs.
  */
 public record BillRequest(
 
@@ -46,9 +46,11 @@ public record BillRequest(
             String panNumber,
             String gstin,
 
-            // For GST bill
-            Double sgstPercentage,
-            Double cgstPercentage
+           @NotNull(message = "GST percentage is required")
+           Double gstPercentage,
+
+           Double sgstPercentage,
+           Double cgstPercentage
     ) {}
 
     public record BillToParty(

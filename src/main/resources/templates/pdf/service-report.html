@@ -11,7 +11,7 @@
   <!-- ── Header ── -->
   <div class="header">
     <div class="header-brand">
-      <img src="apollo_elevator_logo.png" class="brand-logo" alt="Apollo Elevator"/>
+      <img th:src="${logoDataUri}" class="brand-logo logo-default" alt="Apollo Elevators"/>
       <div class="brand-copy">
         <div class="brand-name">APOLLO</div>
         <div class="brand-sub">Elevator Maintenance Services</div>
@@ -133,7 +133,7 @@
 
   <!-- ── Footer ── -->
   <div class="footer">
-    <span>Apollo Elevator &amp; Apollo Elevator Services · Bengaluru</span>
+    <span>Apollo Elevator &amp; Apollo Elevator, Bengaluru</span>
     <span>Report #<span th:text="${report.id}">0</span> · <span th:text="${report.visitDate}">date</span></span>
   </div>
 

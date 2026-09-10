@@ -1,6 +1,8 @@
 package com.apollo.elevator.documents.service;
 
+import com.apollo.elevator.common.exception.InvalidGstPercentageException;
 import com.apollo.elevator.common.exception.ResourceNotFoundException;
+import com.apollo.elevator.common.exception.UnsupportedDocumentTypeException;
 import com.apollo.elevator.customer.model.entity.AmcContract;
 import com.apollo.elevator.customer.model.entity.Customer;
 import com.apollo.elevator.customer.model.entity.Lift;
@@ -17,6 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeFormatter;
@@ -32,7 +36,9 @@ public class DocumentService {
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter DISPLAY_DATE_FMT = DateTimeFormatter.ofPattern("dd MMM yyyy");
-    private static final java.math.BigDecimal GST_PERCENTAGE = java.math.BigDecimal.valueOf(18);
+    private static final BigDecimal GST_PERCENTAGE = BigDecimal.valueOf(18);
+    private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
+    private static final int MONEY_SCALE = 2;
 
     private final CustomerRepository customerRepository;
     private final PdfTemplateService pdfTemplateService;
@@ -55,16 +61,14 @@ public class DocumentService {
     }
 
     /**
-     * Generates a bill PDF (GST or Without-GST) from the supplied BillRequest.
+     * Generates a GST bill PDF from the supplied BillRequest.
      */
     public PdfResult generateBillPdf(DocumentType documentType, BillRequest billRequest) {
-        if (documentType != DocumentType.GST_BILL && documentType != DocumentType.WITHOUT_GST_BILL) {
-            throw new IllegalArgumentException("documentType must be GST_BILL or WITHOUT_GST_BILL for bill generation.");
-        }
+        validateDocumentType(documentType);
+        validateBillRequest(billRequest);
 
-        Map<String, Object> variables = buildBillTemplateVariables(billRequest, documentType);
-        String template = documentType == DocumentType.GST_BILL ? "pdf/gst-bill" : "pdf/without-gst-bill";
-        byte[] pdfBytes = pdfTemplateService.renderToPdf(template, variables);
+        Map<String, Object> variables = buildBillTemplateVariables(billRequest);
+        byte[] pdfBytes = pdfTemplateService.renderToPdf("pdf/gst-bill", variables);
 
         String entityPrefix = billRequest.entity() == BillRequest.BillingEntity.APOLLO_ELEVATOR
                 ? "apollo_elevator" : "apollo_elevator_services";
@@ -85,19 +89,10 @@ public class DocumentService {
      * Fetches the customer's AMC from the database and builds a pre-filled
      * {@link BillRequest} that the UI can display, edit, and POST back to
      * generate the final PDF.
-     *
-     * <p>Entity defaults:
-     * <ul>
-     *   <li>{@code GST_BILL}         → {@code APOLLO_ELEVATOR}         (GSTIN bill)</li>
-     *   <li>{@code WITHOUT_GST_BILL} → {@code APOLLO_ELEVATOR_SERVICES} (plain bill)</li>
-     * </ul>
      */
     @Transactional(readOnly = true)
     public BillPreviewResponse buildBillPreview(Long customerId, DocumentType documentType) {
-        if (documentType != DocumentType.GST_BILL && documentType != DocumentType.WITHOUT_GST_BILL) {
-            throw new IllegalArgumentException(
-                    "documentType must be GST_BILL or WITHOUT_GST_BILL for bill preview.");
-        }
+        validateDocumentType(documentType);
 
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + customerId));
@@ -108,54 +103,46 @@ public class DocumentService {
         log.info("Building bill preview. customerId={}, contractNumber={}, documentType={}",
                 customerId, amc.getContractNumber(), documentType);
 
-        BillRequest billRequest = mapAmcToBillRequest(customer, amc, documentType);
+        BillRequest billRequest = mapAmcToBillRequest(customer, amc);
         return new BillPreviewResponse(documentType, billRequest);
     }
 
     /**
-     * Maps a Customer + AmcContract to a BillRequest suitable for either a GST
-     * bill (Apollo Elevator) or a non-GST bill (Apollo Elevator Services).
+     * Maps a Customer + AmcContract to a GST bill preview payload.
      */
-    private BillRequest mapAmcToBillRequest(Customer customer, AmcContract amc, DocumentType documentType) {
-        boolean isGst = documentType == DocumentType.GST_BILL;
+    private BillRequest mapAmcToBillRequest(Customer customer, AmcContract amc) {
+        double gstPercentage = 18.0;
+        double sgstPct = gstPercentage / 2.0;
+        double cgstPct = gstPercentage / 2.0;
 
-        // ---- Entity / bill details ----
-        BillRequest.BillingEntity entity = isGst
-                ? BillRequest.BillingEntity.APOLLO_ELEVATOR
-                : BillRequest.BillingEntity.APOLLO_ELEVATOR_SERVICES;
-
-        // Auto-generate a sequential-style invoice number when the contract number is available
+        BillRequest.BillingEntity entity = BillRequest.BillingEntity.APOLLO_ELEVATOR;
         String invoiceNumber = amc.getContractNumber() != null ? amc.getContractNumber() : "BILL-001";
-
-        Double sgstPct = isGst ? 9.0 : null;
-        Double cgstPct = isGst ? 9.0 : null;
 
         BillRequest.BillDetails billDetails = new BillRequest.BillDetails(
                 invoiceNumber,
-                formatDate(LocalDate.now()),   // default to today; UI can change
+                formatDate(LocalDate.now()),
                 "Karnataka",
                 "560 058",
                 "8971974009",
-                isGst ? "ABPFA4107Q" : null,
-                isGst ? "29ABPFA4107Q1ZU" : null,
+                "ABPFA4107Q",
+                "29ABPFA4107Q1ZU",
+                gstPercentage,
                 sgstPct,
                 cgstPct
         );
 
-        // ---- Bill-to party ----
         String address = buildAddress(customer);
         BillRequest.BillToParty billTo = new BillRequest.BillToParty(
                 customer.getCustomerName(),
                 address,
-                null,   // PO number — not stored in DB, UI can fill
-                null,   // Job number
-                null,   // Project name
-                null,   // Customer GSTIN — not stored, UI can fill
+                null,
+                null,
+                null,
+                null,
                 customer.getState() != null ? customer.getState() : "Karnataka"
         );
 
-        // ---- Line items — one entry per AMC period ----
-        List<BillRequest.BillLineItem> lineItems = buildBillLineItems(amc, isGst);
+        List<BillRequest.BillLineItem> lineItems = buildBillLineItems(amc, true);
 
         return new BillRequest(entity, billDetails, billTo, lineItems);
     }
@@ -169,7 +156,7 @@ public class DocumentService {
         return List.of(new BillRequest.BillLineItem(
                 1,
                 description,
-                isGst ? "99611" : null,   // SAC code for maintenance services
+                isGst ? "99611" : null,
                 "01 No",
                 baseAmount,
                 baseAmount
@@ -205,38 +192,106 @@ public class DocumentService {
 
     // -------------------------------------------------------------------------
 
-    private Map<String, Object> buildBillTemplateVariables(BillRequest req, DocumentType documentType) {
+    private Map<String, Object> buildBillTemplateVariables(BillRequest req) {
         Map<String, Object> vars = new HashMap<>();
-        vars.put("bill", req.bill());
+        double gstPercentage = validateAndNormalizeGstPercentage(req.bill().gstPercentage());
+        BigDecimal taxableAmount = sumLineItemAmounts(req.lineItems());
+        BigDecimal gstAmount = taxableAmount.multiply(BigDecimal.valueOf(gstPercentage)).divide(ONE_HUNDRED, MONEY_SCALE, RoundingMode.HALF_UP);
+        BigDecimal sgstAmount = gstAmount.divide(BigDecimal.valueOf(2), MONEY_SCALE, RoundingMode.HALF_UP);
+        BigDecimal cgstAmount = gstAmount.subtract(sgstAmount);
+        BigDecimal totalAfterTax = taxableAmount.add(sgstAmount).add(cgstAmount).setScale(MONEY_SCALE, RoundingMode.HALF_UP);
+        BigDecimal totalBeforeTax = taxableAmount.setScale(MONEY_SCALE, RoundingMode.HALF_UP);
+
+        BillRequest.BillDetails adjustedBill = new BillRequest.BillDetails(
+                req.bill().invoiceNumber(),
+                req.bill().invoiceDate(),
+                req.bill().state(),
+                req.bill().pincode(),
+                req.bill().mobile(),
+                req.bill().panNumber(),
+                req.bill().gstin(),
+                gstPercentage,
+                sgstAmount.doubleValue(),
+                cgstAmount.doubleValue()
+        );
+
+        vars.put("bill", adjustedBill);
         vars.put("billTo", req.billTo());
         vars.put("lineItems", req.lineItems() != null ? req.lineItems() : List.of());
         vars.put("entity", req.entity());
-        vars.put("isGstBill", documentType == DocumentType.GST_BILL);
+        vars.put("isGstBill", true);
         vars.put("generatedDate", LocalDate.now().format(DISPLAY_DATE_FMT));
-
-        // Compute totals
-        if (req.lineItems() != null && !req.lineItems().isEmpty()) {
-            double totalBeforeTax = req.lineItems().stream()
-                    .filter(item -> item.amount() != null)
-                    .mapToDouble(BillRequest.BillLineItem::amount)
-                    .sum();
-            vars.put("totalBeforeTax", totalBeforeTax);
-
-            if (documentType == DocumentType.GST_BILL && req.bill().sgstPercentage() != null) {
-                double sgst = Math.round(totalBeforeTax * req.bill().sgstPercentage() / 100 * 100.0) / 100.0;
-                double cgst = req.bill().cgstPercentage() != null
-                        ? Math.round(totalBeforeTax * req.bill().cgstPercentage() / 100 * 100.0) / 100.0
-                        : sgst;
-                vars.put("sgstAmount", sgst);
-                vars.put("cgstAmount", cgst);
-                vars.put("totalAfterTax", totalBeforeTax + sgst + cgst);
-            } else {
-                vars.put("totalAfterTax", totalBeforeTax);
-            }
-            vars.put("amountInWords", numberToWords(totalBeforeTax));
-        }
+        vars.put("totalBeforeTax", totalBeforeTax.doubleValue());
+        vars.put("sgstAmount", sgstAmount.doubleValue());
+        vars.put("cgstAmount", cgstAmount.doubleValue());
+        vars.put("totalAfterTax", totalAfterTax.doubleValue());
+        vars.put("amountInWords", numberToWords(totalAfterTax.doubleValue()));
 
         return vars;
+    }
+
+    private void validateDocumentType(DocumentType documentType) {
+        if (documentType != DocumentType.GST_BILL) {
+            throw new UnsupportedDocumentTypeException("Only GST_BILL is supported.");
+        }
+    }
+
+    private void validateBillRequest(BillRequest billRequest) {
+        if (billRequest == null || billRequest.bill() == null) {
+            throw new IllegalArgumentException("Bill details are required.");
+        }
+        if (billRequest.bill().gstPercentage() == null) {
+            throw new InvalidGstPercentageException("GST percentage is required.");
+        }
+        double gstPercentage = validateAndNormalizeGstPercentage(billRequest.bill().gstPercentage());
+        if (billRequest.lineItems() == null || billRequest.lineItems().isEmpty()) {
+            throw new IllegalArgumentException("At least one line item is required.");
+        }
+        for (BillRequest.BillLineItem item : billRequest.lineItems()) {
+            if (item == null) {
+                continue;
+            }
+            if (item.amount() != null && item.amount() < 0) {
+                throw new IllegalArgumentException("Line item amount cannot be negative.");
+            }
+            if (item.rate() != null && item.rate() < 0) {
+                throw new IllegalArgumentException("Line item rate cannot be negative.");
+            }
+            if (item.quantity() != null && !item.quantity().isBlank()) {
+                try {
+                    double quantity = Double.parseDouble(item.quantity());
+                    if (quantity < 0) {
+                        throw new IllegalArgumentException("Line item quantity cannot be negative.");
+                    }
+                } catch (NumberFormatException ex) {
+                    throw new IllegalArgumentException("Line item quantity must be numeric.");
+                }
+            }
+        }
+    }
+
+    private double validateAndNormalizeGstPercentage(Double gstPercentage) {
+        if (gstPercentage == null) {
+            throw new InvalidGstPercentageException("GST percentage is required.");
+        }
+        if (gstPercentage < 0 || gstPercentage > 100) {
+            throw new InvalidGstPercentageException("GST percentage must be between 0 and 100.");
+        }
+        return gstPercentage;
+    }
+
+    private BigDecimal sumLineItemAmounts(List<BillRequest.BillLineItem> lineItems) {
+        BigDecimal total = BigDecimal.ZERO;
+        if (lineItems == null) {
+            return total;
+        }
+        for (BillRequest.BillLineItem item : lineItems) {
+            if (item == null || item.amount() == null) {
+                continue;
+            }
+            total = total.add(BigDecimal.valueOf(item.amount()));
+        }
+        return total.setScale(MONEY_SCALE, RoundingMode.HALF_UP);
     }
 
     /** Simple rupee amount-in-words helper (covers values up to crores). */

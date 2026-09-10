@@ -117,12 +117,10 @@ public class DocumentController {
                     ```
 
                     Once the user has reviewed / edited the data, POST the `billRequest` body to
-                    `POST /bills/generate?documentType=GST_BILL` (or `WITHOUT_GST_BILL`) to produce
-                    the final PDF.
+                    `POST /bills/generate?documentType=GST_BILL` to produce the final PDF.
 
-                    **Entity defaults auto-selected by documentType:**
-                    - `GST_BILL`         → `APOLLO_ELEVATOR`          (GSTIN: 29ABPFA4107Q1ZU)
-                    - `WITHOUT_GST_BILL` → `APOLLO_ELEVATOR_SERVICES`
+                    **Entity default for GST_BILL:**
+                    - `GST_BILL` → `APOLLO_ELEVATOR` (GSTIN: 29ABPFA4107Q1ZU)
                     """
     )
     @ApiResponses({
@@ -139,7 +137,7 @@ public class DocumentController {
     public ResponseEntity<BillPreviewResponse> previewBill(
             @Parameter(description = "Database ID of the customer", required = true)
             @PathVariable Long customerId,
-            @Parameter(description = "Bill type: GST_BILL or WITHOUT_GST_BILL", required = true,
+            @Parameter(description = "Bill type: GST_BILL", required = true,
                     schema = @Schema(implementation = DocumentType.class))
             @RequestParam DocumentType documentType
     ) {
@@ -163,10 +161,9 @@ public class DocumentController {
                     Accepts the `BillRequest` JSON (as returned by — or edited after —
                     `GET /customers/{customerId}/bill-preview`) and renders it into a PDF.
 
-                    | `documentType`      | Template                                     |
-                    |---------------------|----------------------------------------------|
-                    | `GST_BILL`          | Tax Invoice — Apollo Elevator (with SGST/CGST) |
-                    | `WITHOUT_GST_BILL`  | Plain bill — Apollo Elevator Services         |
+                    | `documentType` | Template                                     |
+                    |----------------|----------------------------------------------|
+                    | `GST_BILL`     | Tax Invoice — Apollo Elevator (with SGST/CGST) |
 
                     **Typical UI flow:**
                     1. `GET /customers/{id}/bill-preview?documentType=GST_BILL` → show JSON to user
@@ -184,7 +181,7 @@ public class DocumentController {
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     public ResponseEntity<byte[]> generateBillPdf(
-            @Parameter(description = "Bill type: GST_BILL or WITHOUT_GST_BILL", required = true,
+            @Parameter(description = "Bill type: GST_BILL", required = true,
                     schema = @Schema(implementation = DocumentType.class))
             @RequestParam DocumentType documentType,
             @Valid @RequestBody BillRequest billRequest
@@ -213,7 +210,7 @@ public class DocumentController {
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     public ResponseEntity<NotificationResponse> sendBillEmail(
-            @Parameter(description = "Bill type: GST_BILL or WITHOUT_GST_BILL", required = true)
+            @Parameter(description = "Bill type: GST_BILL", required = true)
             @RequestParam DocumentType documentType,
             @Parameter(description = "Recipient email address", required = true)
             @RequestParam String to,
@@ -249,7 +246,7 @@ public class DocumentController {
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     public ResponseEntity<NotificationResponse> sendBillWhatsapp(
-            @Parameter(description = "Bill type: GST_BILL or WITHOUT_GST_BILL", required = true)
+            @Parameter(description = "Bill type: GST_BILL", required = true)
             @RequestParam DocumentType documentType,
             @Parameter(description = "Recipient phone number in international format", required = true)
             @RequestParam String phone,

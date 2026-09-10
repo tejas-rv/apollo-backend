@@ -53,10 +53,25 @@ body {
 }
 
 .header-logo {
-    /* apollo_elevator_logo.png is the trimmed icon+wordmark+tagline
-       lockup, natural aspect ratio ~1.24:1 (wide) */
-    max-width: 120px;
+    /* Use the SVG lockup only; the default dark-blue variant is intended for light backgrounds. */
+    max-width: 180px;
     max-height: 95px;
+    display: block;
+}
+
+.header-logo svg,
+.header-logo-short svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.logo-default {
+    filter: none;
+}
+
+.logo-light {
+    filter: brightness(0) invert(1);
 }
 
 #page-header-full .company-details {
@@ -103,8 +118,9 @@ body {
 }
 
 .header-logo-short {
-    max-width: 22px;
-    max-height: 28px;
+    max-width: 140px;
+    max-height: 34px;
+    display: block;
 }
 
 #page-header-short .company-details-short {

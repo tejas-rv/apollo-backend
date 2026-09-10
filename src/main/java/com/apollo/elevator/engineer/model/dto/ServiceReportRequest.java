@@ -9,11 +9,12 @@ import java.time.LocalDate;
 import java.util.List;
 
 public record ServiceReportRequest(
-        @NotNull(message = "AMC contract ID is required") Long amcContractId,
         @NotNull(message = "Customer ID is required")    Long customerId,
         @NotNull(message = "Visit date is required")     LocalDate visitDate,
 
         @Size(max = 2000) String overallNotes,
+
+        Long amcContractId,
 
         @Valid @NotNull List<ServiceCheckItemDto> checkItems
 ) {}

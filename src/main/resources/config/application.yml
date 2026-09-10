@@ -40,7 +40,7 @@ app:
   datasource:
     primary:
       url: jdbc:postgresql://ep-ancient-voice-azj0gtoq-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-      username: neondb_owner1234
+      username: neondb_owner
       password: npg_FU5hYwtveqo3
     fallback:
       url: jdbc:postgresql://localhost:5432/apollo-elevator-development

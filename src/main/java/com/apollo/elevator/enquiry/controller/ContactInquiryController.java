@@ -3,10 +3,13 @@ package com.apollo.elevator.enquiry.controller;
 import com.apollo.elevator.common.api.ApiErrorResponse;
 import com.apollo.elevator.enquiry.model.dto.ContactInquiryRequest;
 import com.apollo.elevator.enquiry.model.dto.ContactInquiryResponse;
+import com.apollo.elevator.enquiry.model.dto.CustomerConversionResponse;
 import com.apollo.elevator.enquiry.model.dto.SubmitInquiryResponse;
 import com.apollo.elevator.enquiry.model.dto.UpdateStatusRequest;
 import com.apollo.elevator.enquiry.model.enums.InquiryStatus;
 import com.apollo.elevator.enquiry.service.ContactInquiryService;
+import com.apollo.elevator.workorder.model.dto.WorkOrderConversionResponse;
+import com.apollo.elevator.workorder.service.WorkOrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -41,6 +44,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ContactInquiryController {
 
     private final ContactInquiryService contactInquiryService;
+    private final WorkOrderService workOrderService;
 
     @PostMapping("/api/public/enquiries")
     @Operation(summary = "Submit a contact or quote inquiry", description = "Public endpoint used by the marketing site's contact and quote forms")
@@ -109,6 +113,33 @@ public class ContactInquiryController {
         log.info("Admin inquiry status update requested. inquiryId={}, status={}, modifiedBy={}", id, request.status(), modifiedBy);
         ContactInquiryResponse response = contactInquiryService.updateStatus(id, request.status(), modifiedBy);
         log.info("Admin inquiry status update completed. inquiryId={}, status={}", id, response.status());
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/api/admin/enquiries/{id}/convert-to-work-order")
+    @Operation(summary = "Convert enquiry to work order", description = "Requires an accepted quotation and moves the enquiry into WORK_ORDER status")
+    public ResponseEntity<WorkOrderConversionResponse> convertToWorkOrder(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        String modifiedBy = authentication != null ? authentication.getName() : "unknown";
+        log.info("Admin enquiry to work order conversion requested. enquiryId={}, modifiedBy={}", id, modifiedBy);
+        WorkOrderConversionResponse response = workOrderService.convertToWorkOrder(id, modifiedBy);
+        log.info("Admin enquiry converted to work order. enquiryId={}, workOrderId={}", id, response.workOrderId());
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/api/admin/enquiries/{id}/convert-to-customer")
+    @Operation(summary = "Convert work order to customer", description = "Creates a real customer record and marks the enquiry as COMPLETED")
+    public ResponseEntity<CustomerConversionResponse> convertToCustomer(
+            @PathVariable Long id,
+            @Valid @RequestBody com.apollo.elevator.customer.model.dto.LiftCustomerDetails request,
+            Authentication authentication
+    ) {
+        String modifiedBy = authentication != null ? authentication.getName() : "unknown";
+        log.info("Customer conversion requested. enquiryId={}, customerName={}, modifiedBy={}", id, request.getCustomerName(), modifiedBy);
+        CustomerConversionResponse response = contactInquiryService.convertToCustomer(id, request, modifiedBy);
+        log.info("Customer conversion completed. enquiryId={}, customerId={}, status={}", id, response.customerId(), response.status());
         return ResponseEntity.ok(response);
     }
 }

@@ -5,6 +5,10 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Base64;
+import java.util.HashMap;
 import java.util.Map;
 
 @Service
@@ -32,8 +36,11 @@ public class PdfTemplateService {
      * @return PDF bytes ready to attach or send
      */
     public byte[] renderToPdf(String templateName, Map<String, Object> variables) {
-        log.info("Rendering PDF template. template={}, variableKeys={}", templateName, variables.keySet());
-        String html = render(templateName, variables);
+        Map<String, Object> templateVariables = new HashMap<>(variables == null ? Map.of() : variables);
+        templateVariables.putIfAbsent("logoDataUri", resourceToDataUri("templates/pdf/apollo_elevator_logo.png"));
+
+        log.info("Rendering PDF template. template={}, variableKeys={}", templateName, templateVariables.keySet());
+        String html = render(templateName, templateVariables);
         log.debug("Template rendered to HTML. htmlLength={}", html.length());
         byte[] pdfBytes = htmlToPdfService.generatePdf(html);
         log.info("PDF generated from template. template={}, pdfSizeBytes={}", templateName, pdfBytes.length);
@@ -44,5 +51,19 @@ public class PdfTemplateService {
         Context context = new Context();
         context.setVariables(variables);
         return templateEngine.process(templateName, context);
+    }
+
+    private String resourceToDataUri(String resourcePath) {
+        try (InputStream inputStream = getClass().getResourceAsStream("/" + resourcePath)) {
+            if (inputStream == null) {
+                log.warn("Could not resolve PDF asset resource: {}", resourcePath);
+                return "";
+            }
+            byte[] bytes = inputStream.readAllBytes();
+            return "data:image/png;base64," + Base64.getEncoder().encodeToString(bytes);
+        } catch (IOException e) {
+            log.warn("Failed to read PDF asset resource: {}", resourcePath, e);
+            return "";
+        }
     }
 }

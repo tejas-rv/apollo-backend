@@ -58,6 +58,9 @@ public class ContactInquiry {
     @Column(name = "source_page", length = 100)
     private String sourcePage;
 
+    @Column(name = "customer_id")
+    private Long customerId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private InquiryStatus status;

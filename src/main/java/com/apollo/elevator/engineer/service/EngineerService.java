@@ -29,6 +29,9 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.apollo.elevator.engineer.model.enums.AnswerType.DESCRIPTIVE;
+import static com.apollo.elevator.engineer.model.enums.AnswerType.YES_NO_NA;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -43,7 +46,9 @@ public class EngineerService {
     private final NotificationService notificationService;
     private final EmailProperties emailProperties;
 
-    /** Resolves user ID from username (for JWT auth context). */
+    /**
+     * Resolves user ID from username (for JWT auth context).
+     */
     @Transactional(readOnly = true)
     public Long resolveEngineerUserId(String username) {
         return userRepository.findByUsername(username)
@@ -89,20 +94,20 @@ public class EngineerService {
         return toResponse(report);
     }
 
-    /** Submit a new service report. Generates PDF and emails admin immediately. */
+    /**
+     * Submit a new service report. Generates PDF and emails admin immediately.
+     */
     public ServiceReportResponse submitReport(Long engineerUserId, ServiceReportRequest req) {
         User engineer = userRepository.findById(engineerUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("Engineer not found: " + engineerUserId));
 
-        // Validate AMC contract exists
-        amcContractRepository.findById(req.amcContractId())
-                .orElseThrow(() -> new ResourceNotFoundException("AMC contract not found: " + req.amcContractId()));
-
         Customer customer = customerRepository.findById(req.customerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found: " + req.customerId()));
 
+        Long resolvedAmcContractId = resolveServiceContractId(customer, req.amcContractId());
+
         ServiceReport report = ServiceReport.builder()
-                .amcContractId(req.amcContractId())
+                .amcContractId(resolvedAmcContractId)
                 .engineerUserId(engineerUserId)
                 .engineerName(engineer.getUsername())
                 .customerId(customer.getId())
@@ -133,7 +138,9 @@ public class EngineerService {
         return toResponse(saved);
     }
 
-    /** Generate PDF for a previously submitted report (for re-download). */
+    /**
+     * Generate PDF for a previously submitted report (for re-download).
+     */
     @Transactional(readOnly = true)
     public byte[] generateReportPdf(Long reportId) {
         ServiceReport report = findReport(reportId);
@@ -156,71 +163,55 @@ public class EngineerService {
         long totalSubmitted = reportRepository.countByEngineerUserIdAndStatus(engineerUserId, ReportStatus.SUBMITTED)
                 + reportRepository.countByEngineerUserIdAndStatus(engineerUserId, ReportStatus.PDF_SENT);
 
-        // Services due in next 7 days for this engineer's customers (all active AMCs with nextServiceDate)
-        // We use all customers for upcoming services since there's no engineer-to-customer assignment
-        List<Map<String, Object>> upcomingServices = getUpcomingServices();
-
         Map<String, Object> dash = new LinkedHashMap<>();
         dash.put("servicesToday", todayReports.size());
         dash.put("servicesThisMonth", monthReports.size());
         dash.put("totalSubmitted", totalSubmitted);
-        dash.put("upcomingServices", upcomingServices);
         dash.put("recentReports", monthReports.stream().limit(5).map(this::toResponse).collect(Collectors.toList()));
         return dash;
-    }
-
-    private List<Map<String, Object>> getUpcomingServices() {
-        LocalDate from = LocalDate.now();
-        LocalDate to = from.plusDays(30);
-        return customerRepository.findAll().stream()
-                .flatMap(c -> c.getLifts().stream()
-                        .flatMap(l -> l.getAmcContracts().stream()
-                                .filter(a -> a.getNextServiceDate() != null
-                                        && !a.getNextServiceDate().isBefore(from)
-                                        && !a.getNextServiceDate().isAfter(to))
-                                .map(a -> {
-                                    Map<String, Object> m = new LinkedHashMap<>();
-                                    m.put("customerId", c.getId());
-                                    m.put("customerName", c.getCustomerName());
-                                    m.put("contractNumber", a.getContractNumber());
-                                    m.put("amcContractId", a.getId());
-                                    m.put("nextServiceDate", a.getNextServiceDate().toString());
-                                    m.put("liftBrand", l.getBrand());
-                                    m.put("serialNumber", l.getSerialNumber());
-                                    return m;
-                                })))
-                .sorted(Comparator.comparing(m -> (String) m.get("nextServiceDate")))
-                .collect(Collectors.toList());
     }
 
     // -------------------------------------------------------------------------
     // Default checklist template
     // -------------------------------------------------------------------------
 
-    /** Returns the standard service checklist pre-filled with questions (no answers yet) */
+    /**
+     * Returns the standard service checklist pre-filled with questions (no answers yet)
+     */
     public List<ServiceCheckItemDto> getDefaultChecklist() {
         return DEFAULT_CHECKLIST;
     }
 
     private static final List<ServiceCheckItemDto> DEFAULT_CHECKLIST = List.of(
-            new ServiceCheckItemDto(null, 1,  "Is the machine room clean and free of obstructions?",     com.apollo.elevator.engineer.model.enums.AnswerType.YES_NO, null, null),
-            new ServiceCheckItemDto(null, 2,  "Are all safety devices (buffers, interlocks) functional?",  com.apollo.elevator.engineer.model.enums.AnswerType.YES_NO, null, null),
-            new ServiceCheckItemDto(null, 3,  "Is the door closing mechanism working correctly?",          com.apollo.elevator.engineer.model.enums.AnswerType.YES_NO, null, null),
-            new ServiceCheckItemDto(null, 4,  "Is the emergency lighting/alarm operational?",              com.apollo.elevator.engineer.model.enums.AnswerType.YES_NO, null, null),
-            new ServiceCheckItemDto(null, 5,  "Is the oil level in the machine adequate?",                 com.apollo.elevator.engineer.model.enums.AnswerType.YES_NO, null, null),
-            new ServiceCheckItemDto(null, 6,  "Are the guide rails lubricated?",                           com.apollo.elevator.engineer.model.enums.AnswerType.YES_NO, null, null),
-            new ServiceCheckItemDto(null, 7,  "Is the brake functioning properly?",                        com.apollo.elevator.engineer.model.enums.AnswerType.YES_NO, null, null),
-            new ServiceCheckItemDto(null, 8,  "Is the speed governor set correctly?",                      com.apollo.elevator.engineer.model.enums.AnswerType.YES_NO, null, null),
-            new ServiceCheckItemDto(null, 9,  "Are all floor level indicators working?",                   com.apollo.elevator.engineer.model.enums.AnswerType.YES_NO, null, null),
-            new ServiceCheckItemDto(null, 10, "Is the cabin light working?",                               com.apollo.elevator.engineer.model.enums.AnswerType.YES_NO, null, null),
-            new ServiceCheckItemDto(null, 11, "Is the intercom/phone working?",                            com.apollo.elevator.engineer.model.enums.AnswerType.YES_NO, null, null),
-            new ServiceCheckItemDto(null, 12, "Is the UPS / ARD (Auto Rescue Device) operational?",        com.apollo.elevator.engineer.model.enums.AnswerType.YES_NO, null, null),
-            new ServiceCheckItemDto(null, 13, "Is the pit clean and dry?",                                 com.apollo.elevator.engineer.model.enums.AnswerType.YES_NO, null, null),
-            new ServiceCheckItemDto(null, 14, "Are there any unusual sounds or vibrations during operation?", com.apollo.elevator.engineer.model.enums.AnswerType.YES_NO, null, null),
-            new ServiceCheckItemDto(null, 15, "Describe work performed during this visit:",                com.apollo.elevator.engineer.model.enums.AnswerType.DESCRIPTIVE, null, null),
-            new ServiceCheckItemDto(null, 16, "Any spare parts replaced? If yes, list them:",              com.apollo.elevator.engineer.model.enums.AnswerType.DESCRIPTIVE, null, null),
-            new ServiceCheckItemDto(null, 17, "Issues found that need follow-up:",                         com.apollo.elevator.engineer.model.enums.AnswerType.DESCRIPTIVE, null, null),
-            new ServiceCheckItemDto(null, 18, "Customer feedback / remarks:",                              com.apollo.elevator.engineer.model.enums.AnswerType.DESCRIPTIVE, null, null)
+            new ServiceCheckItemDto(null, 1, "Cleaning of Parts", YES_NO_NA, null, null),
+            new ServiceCheckItemDto(null, 2, "Oil Level in Gear Box", YES_NO_NA, null, null),
+            new ServiceCheckItemDto(null, 3, "Brake Adjustment", YES_NO_NA, null, null),
+            new ServiceCheckItemDto(null, 4, "Speed Governor Operation", YES_NO_NA, null, null),
+
+            new ServiceCheckItemDto(null, 5, "Loose Connections in controller checked / Tightened", YES_NO_NA, null, null),
+            new ServiceCheckItemDto(null, 6, "Earthing Wire Connection", YES_NO_NA, null, null),
+            new ServiceCheckItemDto(null, 7, "Fuse Wires checking & replacement", YES_NO_NA, null, null),
+
+            new ServiceCheckItemDto(null, 8, "Shaft Lights", YES_NO_NA, null, null),
+            new ServiceCheckItemDto(null, 9, "UP & DN limit switch operation", YES_NO_NA, null, null),
+            new ServiceCheckItemDto(null, 10, "JC1 & JC2 (Final slow DN) switches operation", YES_NO_NA, null, null),
+            new ServiceCheckItemDto(null, 11, "Cleaning of Pit & Pit pully Greasing", YES_NO_NA, null, null),
+            new ServiceCheckItemDto(null, 12, "Pit Switch", YES_NO_NA, null, null),
+
+            new ServiceCheckItemDto(null, 13, "J.T Switch Operation", YES_NO_NA, null, null),
+            new ServiceCheckItemDto(null, 14, "MNT Board Fixing & Operation", YES_NO_NA, null, null),
+            new ServiceCheckItemDto(null, 15, "Car Guide Shoe & Counter weight Guide Shoe", YES_NO_NA, null, null),
+            new ServiceCheckItemDto(null, 16, "Rope Balance Checking", YES_NO_NA, null, null),
+
+            new ServiceCheckItemDto(null, 17, "Light & Fan Functioning", YES_NO_NA, null, null),
+            new ServiceCheckItemDto(null, 18, "Car Call Buttons", YES_NO_NA, null, null),
+            new ServiceCheckItemDto(null, 19, "Stop Button", YES_NO_NA, null, null),
+            new ServiceCheckItemDto(null, 20, "D.C. Alarm & D.C. Buzzer", YES_NO_NA, null, null),
+            new ServiceCheckItemDto(null, 21, "Safety Edge Operation", YES_NO_NA, null, null),
+
+            new ServiceCheckItemDto(null, 22, "Describe work performed during this visit:", DESCRIPTIVE, null, null),
+            new ServiceCheckItemDto(null, 23, "Any spare parts replaced? If yes, list them:", DESCRIPTIVE, null, null),
+            new ServiceCheckItemDto(null, 24, "Issues found that need follow-up:", DESCRIPTIVE, null, null)
     );
 
     // -------------------------------------------------------------------------
@@ -264,8 +255,8 @@ public class EngineerService {
         String subject = "Service Report: " + report.getCustomerName() + " | " + report.getVisitDate() + " | " + report.getEngineerName();
         String body = String.format(
                 "Dear Admin,\n\nPlease find attached the service visit report.\n\n" +
-                "Engineer   : %s\nCustomer   : %s\nVisit Date : %s\nReport ID  : %d\n\n" +
-                "This is an automated email from Apollo Elevator management system.\n\nRegards,\nApollo Elevator",
+                        "Engineer   : %s\nCustomer   : %s\nVisit Date : %s\nReport ID  : %d\n\n" +
+                        "This is an automated email from Apollo Elevator management system.\n\nRegards,\nApollo Elevator",
                 report.getEngineerName(), report.getCustomerName(), report.getVisitDate(), report.getId()
         );
 
@@ -313,24 +304,13 @@ public class EngineerService {
                 l.getDeflectorPulleyNoOfGrooves(), l.getRoping(),
                 l.getMainMotorKw(), l.getMainMotorAmps(), l.getMainMotorSpeed(),
                 l.getMainMotorVoltage(), l.getMainMotorFrequency(), l.getMainMotorNoOfPoles(),
-                l.getBatteryMake(), l.getBatteryVoltage(), l.getBatteryNoOfBatteries(),
-                l.getAmcContracts() == null ? List.of() :
-                        l.getAmcContracts().stream().map(this::toEngineerAmc).collect(Collectors.toList())
-        );
-    }
-
-    private EngineerAmcDto toEngineerAmc(AmcContract a) {
-        return new EngineerAmcDto(
-                a.getId(), a.getContractNumber(), a.getStatus(),
-                a.getStartDate(), a.getEndDate(), a.getContractType(),
-                a.getPaymentFrequency(), a.getNextServiceDate(),
-                a.getTotalServices(), a.getCompletedServices()
+                l.getBatteryMake(), l.getBatteryVoltage(), l.getBatteryNoOfBatteries()
         );
     }
 
     private ServiceReportResponse toResponse(ServiceReport r) {
         return new ServiceReportResponse(
-                r.getId(), r.getAmcContractId(), r.getCustomerId(), r.getCustomerName(),
+                r.getId(), r.getCustomerId(), r.getCustomerName(),
                 r.getEngineerUserId(), r.getEngineerName(), r.getVisitDate(),
                 r.getOverallNotes(), r.getStatus(), r.getSubmittedAt(), r.getPdfSentAt(),
                 r.getCheckItems() == null ? List.of() :
@@ -351,6 +331,35 @@ public class EngineerService {
                 .answerYn(d.answerYn())
                 .answerText(d.answerText())
                 .build()).collect(Collectors.toList());
+    }
+
+    private Long resolveServiceContractId(Customer customer, Long requestedAmcContractId) {
+        if (requestedAmcContractId != null) {
+            if (customer.getLifts() != null) {
+                for (Lift lift : customer.getLifts()) {
+                    if (lift.getAmcContracts() == null) continue;
+                    boolean matches = lift.getAmcContracts().stream()
+                            .anyMatch(contract -> requestedAmcContractId.equals(contract.getId()));
+                    if (matches) {
+                        return requestedAmcContractId;
+                    }
+                }
+            }
+        }
+
+        if (customer.getLifts() == null) {
+            return null;
+        }
+
+        return customer.getLifts().stream()
+                .filter(Objects::nonNull)
+                .map(Lift::getAmcContracts)
+                .filter(Objects::nonNull)
+                .flatMap(List::stream)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .map(AmcContract::getId)
+                .orElse(null);
     }
 
     private ServiceReport findReport(Long id) {

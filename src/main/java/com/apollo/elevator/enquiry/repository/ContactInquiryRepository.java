@@ -29,4 +29,23 @@ public interface ContactInquiryRepository
             @Param("to") LocalDateTime to,
             Pageable pageable
     );
+
+    @Query("""
+            SELECT c
+            FROM ContactInquiry c
+            WHERE c.status = :status
+              AND NOT EXISTS (
+                  SELECT 1 FROM Quotation q WHERE q.enquiry = c
+              )
+              AND (:query IS NULL OR :query = '' OR
+                  LOWER(c.fullName) LIKE LOWER(CONCAT('%', :query, '%')) OR
+                  LOWER(c.phoneNumber) LIKE LOWER(CONCAT('%', :query, '%')) OR
+                  LOWER(c.requirementType) LIKE LOWER(CONCAT('%', :query, '%')))
+            ORDER BY c.createdAt DESC
+            """)
+    Page<ContactInquiry> searchPendingQuotationEnquiries(
+            @Param("status") InquiryStatus status,
+            @Param("query") String query,
+            Pageable pageable
+    );
 }

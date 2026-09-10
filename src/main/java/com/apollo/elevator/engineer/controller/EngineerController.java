@@ -88,7 +88,7 @@ public class EngineerController {
 
     @GetMapping("/service-reports/checklist-template")
     @Operation(summary = "Get default service checklist questions",
-               description = "Returns the standard list of yes/no and descriptive questions to prefill the report form.")
+               description = "Returns the standard list of yes/no/NA questions to prefill the report form.")
     public ResponseEntity<List<ServiceCheckItemDto>> checklistTemplate() {
         return ResponseEntity.ok(engineerService.getDefaultChecklist());
     }
@@ -128,8 +128,9 @@ public class EngineerController {
             description = """
                     Submits the completed service checklist for a visit. The backend will:
                     1. Persist the report
-                    2. Generate a PDF
-                    3. Email it automatically to all admin users
+                    2. Resolve the service context internally using the customer and engineer relationship
+                    3. Generate a PDF
+                    4. Email it automatically to all admin users
 
                     The `checkItems` list must contain answers for all questions (use the
                     `/checklist-template` endpoint to get the default questions).
@@ -147,8 +148,8 @@ public class EngineerController {
             @Valid @RequestBody ServiceReportRequest request
     ) {
         Long engineerUserId = resolveUserId(auth);
-        log.info("Submit service report. engineerUserId={}, customerId={}, amcContractId={}",
-                engineerUserId, request.customerId(), request.amcContractId());
+        log.info("Submit service report. engineerUserId={}, customerId={}",
+                engineerUserId, request.customerId());
         ServiceReportResponse response = engineerService.submitReport(engineerUserId, request);
         log.info("Service report submitted. reportId={}, status={}", response.id(), response.status());
         return ResponseEntity.ok(response);

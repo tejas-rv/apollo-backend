@@ -5,9 +5,8 @@ import com.apollo.elevator.customer.model.enums.DriveType;
 import com.apollo.elevator.customer.model.enums.LiftType;
 
 import java.math.BigDecimal;
-import java.util.List;
 
-/** Lift details visible to engineer — includes operational/technical specs, excludes financial data */
+/** Lift details visible to engineer — includes operational/technical specs, excludes AMC data */
 public record EngineerLiftDto(
         Long id,
         LiftType liftType,
@@ -53,6 +52,5 @@ public record EngineerLiftDto(
         Integer mainMotorNoOfPoles,
         String batteryMake,
         String batteryVoltage,
-        Integer batteryNoOfBatteries,
-        List<EngineerAmcDto> amcContracts
+        Integer batteryNoOfBatteries
 ) {}

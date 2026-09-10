@@ -41,40 +41,61 @@ body {
 .header-table {
     width: 100%;
     border-collapse: collapse;
-    border-bottom: 2px solid #333;
+    border-bottom: 2px solid #0A4DA6;
 }
 
 .header-logo-cell {
-    width: 90px;
-    padding: 8px 6px;
+    width: 110px;
+    padding: 12px 10px;
     vertical-align: middle;
     text-align: center;
-    border-right: 1px solid #aaa;
+    border-right: 1px solid #0A4DA6;
+    background: #f5f9ff;
 }
 
-.header-logo-cell img {
-    width: 75px;
+.header-logo-cell .header-logo {
+    width: 88px;
+    display: block;
+    filter: none;
+}
+
+.header-logo-cell .header-logo svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.logo-default {
+    filter: none;
+}
+
+.logo-light {
+    filter: brightness(0) invert(1);
 }
 
 .header-company-cell {
-    padding: 8px 10px;
+    padding: 12px 14px;
     vertical-align: middle;
+    background: #ffffff;
 }
 
 .company-name {
-    font-size: 18pt;
+    font-size: 20pt;
     font-weight: bold;
     letter-spacing: 1px;
+    color: #0A4DA6;
 }
 
 .company-addr {
     font-size: 9pt;
+    color: #153d6e;
 }
 
 .company-gstin {
     font-size: 9pt;
     font-weight: bold;
     margin-top: 2px;
+    color: #153d6e;
 }
 
 /* ---- TAX INVOICE TITLE ---- */
@@ -82,9 +103,11 @@ body {
     text-align: center;
     font-size: 11pt;
     font-weight: bold;
-    border-bottom: 1px solid #333;
-    padding: 4px 0;
+    border-bottom: 1px solid #0A4DA6;
+    padding: 6px 0;
     letter-spacing: 2px;
+    background: #0A4DA6;
+    color: #ffffff;
 }
 
 /* ---- INVOICE META ---- */

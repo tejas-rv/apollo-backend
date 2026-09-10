@@ -8,7 +8,6 @@ import java.util.List;
 
 public record ServiceReportResponse(
         Long id,
-        Long amcContractId,
         Long customerId,
         String customerName,
         Long engineerUserId,
