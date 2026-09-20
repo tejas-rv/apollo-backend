@@ -28,8 +28,8 @@ public class ServiceCheckItem {
     private AnswerType answerType;
 
     /** Populated when answerType is YES_NO / YES_NO_NA; null means NA */
-    @Column(name = "answer_yn")
-    private Boolean answerYn;
+    @Column(name = "answer", length = 20)
+    private String answer;
 
     /** Populated for descriptive notes or as additional notes for yes/no answers */
     @Column(name = "answer_text", length = 1000)

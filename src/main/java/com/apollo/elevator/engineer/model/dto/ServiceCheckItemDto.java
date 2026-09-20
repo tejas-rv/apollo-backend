@@ -9,6 +9,6 @@ public record ServiceCheckItemDto(
         @NotNull Integer itemOrder,
         @NotBlank String question,
         @NotNull AnswerType answerType,
-        Boolean answerYn,
+        String answer,
         String answerText
 ) {}

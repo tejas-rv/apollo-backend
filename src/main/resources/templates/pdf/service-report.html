@@ -76,34 +76,35 @@
   <div class="section-title">Service Checklist</div>
   <table class="checklist-table">
     <thead>
-      <tr>
-        <th class="q-num">#</th>
-        <th class="q-text">Question</th>
-        <th class="q-ans">Answer</th>
-      </tr>
+    <tr>
+      <th class="q-num">#</th>
+      <th class="q-text">Question</th>
+      <th class="q-ans">Answer</th>
+    </tr>
     </thead>
     <tbody>
-      <tr th:each="item : ${report.checkItems}">
-        <td class="q-num" th:text="${item.itemOrder}">1</td>
-        <td class="q-text" th:text="${item.question}">Question</td>
-        <td class="q-ans">
-          <!-- YES_NO -->
-          <span th:if="${item.answerType.name() == 'YES_NO'}">
-            <span th:if="${item.answerYn != null and item.answerYn}" class="badge-yes">✔ YES</span>
-            <span th:if="${item.answerYn != null and !item.answerYn}" class="badge-no">✘ NO</span>
-            <span th:if="${item.answerYn == null}" style="color:#aaa;">—</span>
+    <tr th:each="item : ${report.checkItems}">
+      <td class="q-num" th:text="${item.itemOrder}">1</td>
+      <td class="q-text" th:text="${item.question}">Question</td>
+      <td class="q-ans">
+        <!-- YES_NO / YES_NO_NA -->
+        <span th:if="${item.answerType.name() == 'YES_NO' or item.answerType.name() == 'YES_NO_NA'}">
+            <span th:if="${item.answer == 'Yes'}" class="badge-yes">✔ YES</span>
+            <span th:if="${item.answer == 'No'}" class="badge-no">✘ NO</span>
+            <span th:if="${item.answer == 'Not Applicable'}" style="color:#666;">N/A</span>
+            <span th:if="${item.answer == null}" style="color:#aaa;">—</span>
             <span th:if="${item.answerText != null and item.answerText != ''}"
                   style="display:block;font-size:9.5px;color:#555;margin-top:2px;"
                   th:text="${item.answerText}">notes</span>
           </span>
-          <!-- DESCRIPTIVE -->
-          <span th:if="${item.answerType.name() == 'DESCRIPTIVE'}" class="desc-answer"
-                th:text="${item.answerText != null and item.answerText != '' ? item.answerText : '—'}">—</span>
-        </td>
-      </tr>
-      <tr th:if="${report.checkItems == null or report.checkItems.empty}">
-        <td colspan="3" style="text-align:center;color:#999;padding:14px;">No checklist items recorded.</td>
-      </tr>
+        <!-- DESCRIPTIVE -->
+        <span th:if="${item.answerType.name() == 'DESCRIPTIVE'}" class="desc-answer"
+              th:text="${item.answerText != null and item.answerText != '' ? item.answerText : '—'}">—</span>
+      </td>
+    </tr>
+    <tr th:if="${report.checkItems == null or report.checkItems.empty}">
+      <td colspan="3" style="text-align:center;color:#999;padding:14px;">No checklist items recorded.</td>
+    </tr>
     </tbody>
   </table>
 

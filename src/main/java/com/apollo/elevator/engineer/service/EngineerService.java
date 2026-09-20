@@ -317,7 +317,7 @@ public class EngineerService {
                         r.getCheckItems().stream()
                                 .sorted(Comparator.comparingInt(ServiceCheckItem::getItemOrder))
                                 .map(i -> new ServiceCheckItemDto(i.getId(), i.getItemOrder(),
-                                        i.getQuestion(), i.getAnswerType(), i.getAnswerYn(), i.getAnswerText()))
+                                        i.getQuestion(), i.getAnswerType(), i.getAnswer(), i.getAnswerText()))
                                 .collect(Collectors.toList())
         );
     }
@@ -328,7 +328,7 @@ public class EngineerService {
                 .itemOrder(d.itemOrder())
                 .question(d.question())
                 .answerType(d.answerType())
-                .answerYn(d.answerYn())
+                .answer(d.answer())
                 .answerText(d.answerText())
                 .build()).collect(Collectors.toList());
     }
