@@ -60,6 +60,10 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
+    // Payment
+    implementation("com.google.zxing:core:3.5.3")
+    implementation("com.google.zxing:javase:3.5.3")
+
     // Swagger
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
     implementation("com.openhtmltopdf:openhtmltopdf-pdfbox:1.0.10")

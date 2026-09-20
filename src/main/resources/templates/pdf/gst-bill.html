@@ -12,11 +12,11 @@
     <table class="header-table">
         <tr>
             <td class="header-logo-cell">
-                <img th:src="${logoDataUri}" class="header-logo logo-default" alt="Apollo Elevators"/>
+                <img th:src="${logoDataUri}" class="header-logo logo-default" alt="Apollo Elevator"/>
             </td>
             <td class="header-company-cell">
                 <div class="company-name">APOLLO ELEVATOR</div>
-                <div class="company-addr">No. 14, Karihobana Halli, T.G. Palya, Bangalore &#8211; 560 058</div>
+                <div class="company-addr">No. 14, Karihobana Halli, T.G. Palya, Bangalore - 560 058</div>
                 <div class="company-gstin">GSTIN : 29ABPFA4107Q1ZU</div>
             </td>
         </tr>
@@ -28,27 +28,35 @@
     <!-- INVOICE META -->
     <table class="meta-table">
         <tr>
-            <td class="label border-right meta-w-sm">Invoice No.</td>
-            <td class="border-right meta-w-md" th:text="${bill.invoiceNumber}">139</td>
-            <td class="label border-right meta-w-sm">Pan No.</td>
-            <td th:text="${bill.panNumber != null ? bill.panNumber : 'ABPFA4107Q'}">ABPFA4107Q</td>
+            <td class="label border-right meta-w-sm border-bottom">Invoice No.</td>
+            <td class="border-right meta-w-md border-bottom"
+                style="color: red; font-weight: bold;"
+                th:text="${bill.invoiceNumber}">
+                139
+            </td>
+            <td class="label border-right meta-w-sm border-bottom">Pan No.</td>
+            <td class="meta-w-md border-bottom" th:text="${bill.panNumber != null ? bill.panNumber : 'ABPFA4107Q'}">ABPFA4107Q</td>
         </tr>
         <tr>
             <td class="label border-right border-bottom">Invoice Date</td>
             <td class="border-right border-bottom" th:text="${bill.invoiceDate}">01-07-2026</td>
-            <td class="label border-right border-bottom" colspan="2">Mobile : <span th:text="${bill.mobile != null ? bill.mobile : '8971974009'}">8971974009</span></td>
+            <td class="border-bottom" colspan="2">&#160;</td>
         </tr>
         <tr>
             <td class="label border-right">State : Karnataka</td>
-            <td class="border-right" th:text="${bill.pincode != null ? bill.pincode : '560 058'}">560 058</td>
-            <td class="label border-right" colspan="2">Work Order Details</td>
+            <td class="label border-right"
+                th:text="${'Pincode: ' + (bill.pincode != null ? bill.pincode : '560 058')}">
+                Pincode: 560 058
+            </td>
+            <td class="label" colspan="2">Mobile : <span th:text="${bill.mobile != null ? bill.mobile : '8971974009'}">8971974009</span></td>
         </tr>
     </table>
 
     <!-- BILL TO PARTY -->
     <table class="bill-to-table">
         <tr>
-            <td class="section-header" colspan="2">Bill to Party</td>
+            <td class="section-header" colspan="1">Bill to Party</td>
+            <td class="section-header" colspan="1">Work Order Details</td>
         </tr>
         <tr>
             <td class="bill-to-left">
@@ -68,29 +76,36 @@
     <!-- LINE ITEMS -->
     <table class="items-table">
         <thead>
-            <tr>
-                <th class="sl">Sl. No.</th>
-                <th class="desc">Product Description</th>
-                <th class="hsn">HSN Code</th>
-                <th class="qty">Qnty.</th>
-                <th class="rate">Rate</th>
-                <th class="amount">Amount Rs. P.</th>
-            </tr>
+        <tr>
+            <th class="sl">Sl. No.</th>
+            <th class="desc">Product Description</th>
+            <th class="hsn">HSN Code</th>
+            <th class="qty">Quantity</th>
+            <th class="rate">Rate</th>
+            <th class="amount">Amount</th>
+        </tr>
         </thead>
         <tbody>
-            <tr th:each="item : ${lineItems}">
-                <td class="sl" th:text="${item.slNo}">1</td>
-                <td class="desc" th:text="${item.description}">Description</td>
-                <td class="hsn" th:text="${item.hsnCode}">99611</td>
-                <td class="qty" th:text="${item.quantity}">01 No</td>
-                <td class="rate" th:text="${item.rate != null ? #numbers.formatDecimal(item.rate, 1, 2) : ''}">10,500</td>
-                <td class="amount" th:text="${item.amount != null ? #numbers.formatDecimal(item.amount, 1, 2) : ''}">10,500</td>
-            </tr>
-            <!-- Blank filler row for visual spacing -->
-            <tr class="filler-row" th:if="${lineItems == null or lineItems.isEmpty()}">
-                <td class="sl"></td><td class="desc"></td><td class="hsn"></td>
-                <td class="qty"></td><td class="rate"></td><td class="amount"></td>
-            </tr>
+        <tr th:each="item : ${lineItems}">
+            <td class="sl" th:text="${item.slNo}">1</td>
+            <td class="desc" th:text="${item.description}">Description</td>
+            <td class="hsn" th:text="${item.hsnCode}">99611</td>
+            <td class="qty" th:text="${item.quantity}">01 No</td>
+            <td class="rate"
+                th:text="${item.rate != null ? #numbers.formatDecimal(item.rate, 1, 'COMMA', 2, 'POINT') : ''}">
+                10,500.00
+            </td>
+
+            <td class="amount"
+                th:text="${item.amount != null ? #numbers.formatDecimal(item.amount, 1, 'COMMA', 2, 'POINT') : ''}">
+                10,500.00
+            </td>
+        </tr>
+        <!-- Blank filler row for visual spacing -->
+        <tr class="filler-row" th:if="${lineItems == null or lineItems.isEmpty()}">
+            <td class="sl">&#160;</td><td class="desc">&#160;</td><td class="hsn">&#160;</td>
+            <td class="qty">&#160;</td><td class="rate">&#160;</td><td class="amount">&#160;</td>
+        </tr>
         </tbody>
     </table>
 
@@ -99,36 +114,64 @@
         <tr>
             <td class="totals-left">
                 <div class="amount-words">
-                    Rupees in Words: <span th:text="${amountInWords}">Ten Thousand Rupees Only</span>
+                    <strong>Rupees in Words:</strong>
+                    <span th:text="${amountInWords}">Ten Thousand Rupees Only</span>
                 </div>
 
-                <!-- BANK DETAILS -->
-                <div class="bank-details-label">BANK DETAILS</div>
-                <div class="bank-details-line">Bank A/c : 3777706838</div>
-                <div class="bank-details-line">Bank IFC : CBIN0282436</div>
-                <div class="terms-line">Terms &amp; Conditions :</div>
+                <!-- BANK DETAILS + UPI QR -->
+                <table class="pay-table">
+                    <tr>
+                        <td class="pay-bank">
+                            <div class="bank-details-label">BANK DETAILS</div>
+                            <div class="bank-details-line">Account Number : 3777706838</div>
+                            <div class="bank-details-line">IFSC Code : CBIN0282436</div>
+                        </td>
+                        <td class="pay-qr" th:if="${upiQrDataUri != null}">
+                            <img th:src="${upiQrDataUri}" class="upi-qr" alt="Scan to pay via UPI"/>
+                            <div class="upi-qr-caption">Scan &amp; Pay via UPI</div>
+                            <div class="upi-vpa" th:if="${upiVpa != null}" th:text="${upiVpa}">tejas.v008@okaxis</div>
+                        </td>
+                    </tr>
+                </table>
             </td>
             <td class="totals-right">
                 <table class="totals-right-table">
                     <tr>
                         <td class="t-label">Total Amount Before Tax</td>
-                        <td class="t-value" th:text="${totalBeforeTax != null ? #numbers.formatDecimal(totalBeforeTax, 1, 2) : '0.00'}">10,000</td>
+                        <td class="t-value"
+                            th:text="${totalBeforeTax != null ? #numbers.formatDecimal(totalBeforeTax, 1, 'COMMA', 2, 'POINT') : '0.00'}">
+                            10,000.00
+                        </td>
                     </tr>
+
                     <tr>
                         <td class="t-label">SGST
-                            <span th:if="${bill.sgstPercentage != null}" th:text="${bill.sgstPercentage + '%'}"></span>
+                            <span th:if="${bill.sgstPercentage != null}"
+                                  th:text="${bill.sgstPercentage + '%'}"></span>
                         </td>
-                        <td class="t-value" th:text="${sgstAmount != null ? #numbers.formatDecimal(sgstAmount, 1, 2) : '0.00'}">945</td>
+                        <td class="t-value"
+                            th:text="${sgstAmount != null ? #numbers.formatDecimal(sgstAmount, 1, 'COMMA', 2, 'POINT') : '0.00'}">
+                            945.00
+                        </td>
                     </tr>
+
                     <tr>
                         <td class="t-label">CGST
-                            <span th:if="${bill.cgstPercentage != null}" th:text="${bill.cgstPercentage + '%'}"></span>
+                            <span th:if="${bill.cgstPercentage != null}"
+                                  th:text="${bill.cgstPercentage + '%'}"></span>
                         </td>
-                        <td class="t-value" th:text="${cgstAmount != null ? #numbers.formatDecimal(cgstAmount, 1, 2) : '0.00'}">945</td>
+                        <td class="t-value"
+                            th:text="${cgstAmount != null ? #numbers.formatDecimal(cgstAmount, 1, 'COMMA', 2, 'POINT') : '0.00'}">
+                            945.00
+                        </td>
                     </tr>
+
                     <tr class="t-total">
                         <td class="t-label">Total Amount After Tax</td>
-                        <td class="t-value" th:text="${totalAfterTax != null ? #numbers.formatDecimal(totalAfterTax, 1, 2) : '0.00'}">11,890</td>
+                        <td class="t-value"
+                            th:text="${totalAfterTax != null ? #numbers.formatDecimal(totalAfterTax, 1, 'COMMA', 2, 'POINT') : '0.00'}">
+                            11,890.00
+                        </td>
                     </tr>
                 </table>
             </td>
@@ -139,10 +182,18 @@
     <table class="footer-table">
         <tr>
             <td class="footer-left">
-                <div class="certified-text">Certified that the Particulars given above are true &amp; correct</div>
+                <div class="terms-line">
+                    <strong>Terms &amp; Conditions :</strong>
+                    <p>
+                        1. Goods once sold will not be taken back.<br/>
+                        2. Subject to Bengaluru jurisdiction only.
+                    </p>
+                </div>
             </td>
             <td class="footer-right">
+                <div class="certified-text">Certified that the Particulars given above are true &amp; correct</div>
                 <div class="for-label">for APOLLO ELEVATOR</div>
+                <img src="apollo_elevator_authorised_signatory.png" alt="Authorised Signature" class="sig-image" />
                 <div class="auth-sig">Authorised Signature</div>
             </td>
         </tr>

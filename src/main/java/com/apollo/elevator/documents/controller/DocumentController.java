@@ -3,6 +3,7 @@ package com.apollo.elevator.documents.controller;
 import com.apollo.elevator.common.api.ApiErrorResponse;
 import com.apollo.elevator.documents.model.dto.BillPreviewResponse;
 import com.apollo.elevator.documents.model.dto.BillRequest;
+import com.apollo.elevator.documents.model.dto.PdfGenerationRequest;
 import com.apollo.elevator.documents.model.enums.DocumentType;
 import com.apollo.elevator.documents.service.DocumentService;
 import com.apollo.elevator.notification.email.model.dto.EmailMessageRequest;
@@ -29,6 +30,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import static com.apollo.elevator.documents.model.enums.DocumentType.AMC_CONTRACT;
+
 @RestController
 @RequestMapping("/api/admin/documents")
 @RequiredArgsConstructor
@@ -48,11 +51,11 @@ public class DocumentController {
             summary = "Generate Customer Document PDF",
             description = """
                     Generates a PDF for the given customer.
-
+                    
                     | `documentType`  | Output                      |
                     |-----------------|-----------------------------|
                     | `AMC_CONTRACT`  | AMC Contract PDF (default)  |
-
+                    
                     For bills, use the two-step preview → generate flow below.
                     """
     )
@@ -79,7 +82,9 @@ public class DocumentController {
         return pdfResponse(result);
     }
 
-    /** Backward-compatible alias kept so existing callers don't break. */
+    /**
+     * Backward-compatible alias kept so existing callers don't break.
+     */
     @GetMapping("/customers/{customerId}/amc-contract")
     @Operation(summary = "Generate AMC Contract PDF (legacy — use GET /customers/{customerId} instead)")
     @ApiResponses({
@@ -92,7 +97,7 @@ public class DocumentController {
     public ResponseEntity<byte[]> generateAmcContractPdfLegacy(
             @PathVariable Long customerId
     ) {
-        return generateCustomerDocument(customerId, DocumentType.AMC_CONTRACT);
+        return generateCustomerDocument(customerId, AMC_CONTRACT);
     }
 
     // =========================================================================
@@ -104,10 +109,10 @@ public class DocumentController {
             summary = "Preview bill data fetched from the customer's AMC",
             description = """
                     **Step 1 of the 2-step bill flow.**
-
+                    
                     Fetches the customer and their active AMC contract from the database and returns
                     a pre-filled `BillRequest` JSON object for the UI to display and optionally edit.
-
+                    
                     The response object looks like:
                     ```json
                     {
@@ -115,10 +120,10 @@ public class DocumentController {
                       "billRequest": { ... }
                     }
                     ```
-
+                    
                     Once the user has reviewed / edited the data, POST the `billRequest` body to
                     `POST /bills/generate?documentType=GST_BILL` to produce the final PDF.
-
+                    
                     **Entity default for GST_BILL:**
                     - `GST_BILL` → `APOLLO_ELEVATOR` (GSTIN: 29ABPFA4107Q1ZU)
                     """
@@ -157,14 +162,14 @@ public class DocumentController {
             summary = "Generate Bill PDF from reviewed bill data",
             description = """
                     **Step 2 of the 2-step bill flow.**
-
+                    
                     Accepts the `BillRequest` JSON (as returned by — or edited after —
                     `GET /customers/{customerId}/bill-preview`) and renders it into a PDF.
-
+                    
                     | `documentType` | Template                                     |
                     |----------------|----------------------------------------------|
                     | `GST_BILL`     | Tax Invoice — Apollo Elevator (with SGST/CGST) |
-
+                    
                     **Typical UI flow:**
                     1. `GET /customers/{id}/bill-preview?documentType=GST_BILL` → show JSON to user
                     2. User reviews / edits fields in the UI
@@ -267,5 +272,99 @@ public class DocumentController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .contentLength(result.pdfBytes().length)
                 .body(result.pdfBytes());
+    }
+
+    @PostMapping(
+            value = "/generate-pdf",
+            produces = MediaType.APPLICATION_PDF_VALUE
+    )
+    @Operation(
+            summary = "Generate PDF",
+            description = """
+                    Generates a PDF based on the supplied document type.
+                    
+                    AMC_CONTRACT:
+                    Requires customerId.
+                    
+                    GST_BILL:
+                    Requires billRequest.
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "PDF generated",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_PDF_VALUE,
+                            schema = @Schema(type = "string", format = "binary")
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid request",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Required data not found",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            )
+    })
+    public ResponseEntity<byte[]> generatePdf(
+            @Valid @RequestBody PdfGenerationRequest request
+    ) {
+
+        log.info(
+                "PDF generation request. documentType={}",
+                request.documentType()
+        );
+
+        DocumentService.PdfResult result;
+
+        switch (request.documentType()) {
+
+            case AMC_CONTRACT -> {
+                if (request.customerId() == null) {
+                    throw new IllegalArgumentException(
+                            "customerId is required for AMC_CONTRACT"
+                    );
+                }
+
+                result = documentService.generateCustomerDocument(
+                        request.customerId(),
+                        AMC_CONTRACT
+                );
+            }
+
+            case GST_BILL -> {
+                if (request.billRequest() == null) {
+                    throw new IllegalArgumentException(
+                            "billRequest is required for GST_BILL"
+                    );
+                }
+
+                result = documentService.generateBillPdf(
+                        DocumentType.GST_BILL,
+                        request.billRequest()
+                );
+            }
+
+            default -> throw new IllegalArgumentException(
+                    "Unsupported document type: " + request.documentType()
+            );
+        }
+
+        log.info(
+                "PDF generated. documentType={}, fileName={}, sizeBytes={}",
+                request.documentType(),
+                result.fileName(),
+                result.pdfBytes().length
+        );
+
+        return pdfResponse(result);
     }
 }

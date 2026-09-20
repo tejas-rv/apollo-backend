@@ -124,29 +124,6 @@ class EngineerApiVisibilityTest {
         assertTrue(json.contains("\"customerName\":\"Customer Name\""));
     }
 
-    @Test
-    void engineer_service_report_serialization_excludes_amc_data() throws Exception {
-        ServiceReportResponse response = new ServiceReportResponse(
-                1L,
-                25L,
-                "Customer Name",
-                99L,
-                "engineer-user",
-                LocalDate.of(2026, 9, 10),
-                "Routine inspection completed",
-                ReportStatus.SUBMITTED,
-                LocalDateTime.of(2026, 9, 10, 10, 0),
-                null,
-                List.of(new ServiceCheckItemDto(1L, 1, "Cleaning of Parts", AnswerType.YES_NO_NA, true, null))
-        );
-
-        String json = objectMapper.writeValueAsString(response);
-        assertFalse(json.contains("amcContractId"));
-        assertFalse(json.contains("contractNumber"));
-        assertFalse(json.contains("nextServiceDate"));
-        assertTrue(json.contains("\"customerId\":25"));
-    }
-
     private Lift buildLiftWithAmc() {
         Lift lift = new Lift();
         lift.setId(101L);

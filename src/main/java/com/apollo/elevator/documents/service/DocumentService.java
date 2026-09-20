@@ -7,13 +7,12 @@ import com.apollo.elevator.customer.model.entity.AmcContract;
 import com.apollo.elevator.customer.model.entity.Customer;
 import com.apollo.elevator.customer.model.entity.Lift;
 import com.apollo.elevator.customer.model.entity.ServiceHistory;
+import com.apollo.elevator.customer.model.enums.AmcStatus;
+import com.apollo.elevator.customer.repository.CustomerRepository;
 import com.apollo.elevator.documents.model.dto.BillPreviewResponse;
 import com.apollo.elevator.documents.model.dto.BillRequest;
 import com.apollo.elevator.documents.model.dto.ContractPdfRequest;
-import com.apollo.elevator.customer.model.enums.AmcStatus;
 import com.apollo.elevator.documents.model.enums.DocumentType;
-import com.apollo.elevator.documents.service.PdfTemplateService;
-import com.apollo.elevator.customer.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,8 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +41,7 @@ public class DocumentService {
 
     private final CustomerRepository customerRepository;
     private final PdfTemplateService pdfTemplateService;
+    private final UpiQrCodeService upiQrCodeService;
 
     public record PdfResult(byte[] pdfBytes, String fileName) {}
 
@@ -226,6 +226,10 @@ public class DocumentService {
         vars.put("cgstAmount", cgstAmount.doubleValue());
         vars.put("totalAfterTax", totalAfterTax.doubleValue());
         vars.put("amountInWords", numberToWords(totalAfterTax.doubleValue()));
+
+// UPI payment QR — uses the BigDecimal, not the double, to avoid float drift
+        vars.put("upiQrDataUri", upiQrCodeService.buildUpiQrDataUri(req.bill().invoiceNumber(), totalAfterTax));
+        vars.put("upiVpa", upiQrCodeService.getVpa());
 
         return vars;
     }

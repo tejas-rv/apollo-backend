@@ -77,6 +77,11 @@ management:
     mail:
       enabled: false
 
+apollo:
+  upi:
+    vpa: tejas.v008@okaxis
+    payee-name: APOLLO ELEVATOR
+
 springdoc:
   api-docs:
     path: /v3/api-docs

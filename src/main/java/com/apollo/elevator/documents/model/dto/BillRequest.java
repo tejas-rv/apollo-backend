@@ -29,8 +29,7 @@ public record BillRequest(
 ) {
 
     public enum BillingEntity {
-        APOLLO_ELEVATOR,
-        APOLLO_ELEVATOR_SERVICES
+        APOLLO_ELEVATOR
     }
 
     public record BillDetails(
