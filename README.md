@@ -1,156 +1,113 @@
-# Apollo Elevator — Backend
+# Apollo Elevators Backend
 
-Java 21 + Spring Boot 4.1 + Gradle. JWT auth, with the JWT secret and other
-sensitive config stored in the database rather than in `application.yml`.
+Spring Boot 4.1 and Java 21 REST API for the Apollo Elevators platform.
+The service provides JWT authentication, customer/lift/AMC management,
+engineer service reports, PDF documents, enquiries, quotations, work orders,
+and email/WhatsApp notifications.
 
-## How the DB-stored secrets work (read this first)
+## Stack
 
-You asked for JWT secret/username/password-type sensitive fields to come from
-the database instead of config files. Here's the actual design, and *why*
-it's built this way:
-
-- **`system_secret` table** holds the JWT signing secret, token expiry, and
-  issuer — encrypted with AES-256-GCM before being written.
-- **One master key** (`APP_MASTER_KEY`, an environment variable) encrypts and
-  decrypts those DB values. This key **cannot** live in the database itself —
-  if it did, anyone with DB access could decrypt everything, defeating the
-  point. It lives only in your hosting platform's environment variables
-  (Render/Railway "Environment" tab), never in source control.
-- **Database connection credentials** (`DB_USERNAME`, `DB_PASSWORD`)
-  unavoidably stay as environment variables too — you can't fetch the
-  password for a database from inside that same database before you've
-  connected to it. This is standard practice, not a shortcut.
-- **User passwords** (admin/engineer/customer logins) are in the `app_user`
-  table as BCrypt hashes — this part matches what you asked for directly.
-
-On first startup, `SecurityInitializer` auto-generates a random JWT secret,
-encrypts it, and stores it in `system_secret` — you never hand-craft it. It
-also creates a default `admin` user with a random password printed to the
-console **once**. Copy it immediately; build a "change password" endpoint
-before going further.
+- Java 21 and Gradle
+- Spring Boot Web, Validation, Security, Data JPA, Actuator, and Mail
+- PostgreSQL with Flyway migrations
+- JWT access and refresh tokens
+- Thymeleaf and OpenHTMLToPDF for documents
+- Springdoc OpenAPI
 
 ## Local setup
 
-0. **Add the Gradle wrapper** (not included in this download — generate it
-   once with a local Gradle install, so future clones don't need Gradle
-   pre-installed):
-   ```bash
-   gradle wrapper --gradle-version 8.11
-   ```
-1. **Generate a master key:**
-   ```bash
-   openssl rand -base64 32
-   ```
-2. **Start Postgres locally:**
+1. Start PostgreSQL:
+
    ```bash
    docker compose up -d
    ```
-3. **Set environment variables** (or use a `.env` loader / your IDE's run config):
-   ```bash
-   export APP_MASTER_KEY="<paste the key from step 1>"
-   export DB_URL="jdbc:postgresql://localhost:5432/apollo"
-   export DB_USERNAME="apollo"
-   export DB_PASSWORD="apollo"
+
+2. Set the required environment variables:
+
+   ```text
+   APP_MASTER_KEY=<base64 32-byte key>
+   DB_URL=jdbc:postgresql://localhost:5432/apollo
+   DB_USERNAME=apollo
+   DB_PASSWORD=apollo
    ```
-4. **Run:**
+
+   Generate a master key with `openssl rand -base64 32`. The master key is
+   used to encrypt secrets stored in the `system_secret` table and must never
+   be committed.
+
+3. Run the service:
+
    ```bash
-   ./gradlew bootRun
+   .\gradlew.bat bootRun
    ```
-   Watch the console for the generated admin password on first run.
 
-5. **Log in:**
-   ```bash
-   curl -X POST http://localhost:8080/api/auth/login \
-     -H "Content-Type: application/json" \
-     -d '{"username":"admin","password":"<printed password>"}'
-   ```
-   Returns an access token plus a refresh token. Use the access token as
-   `Authorization: Bearer <token>` on subsequent requests to `/api/admin/**`
-   or `/api/engineer/**`.
+   Flyway applies migrations automatically. On the first start, the
+   application creates the encrypted JWT configuration and a default admin
+   user, logging the generated password once.
 
-## Auth endpoints available now
+The API is available at `http://localhost:8080`. OpenAPI documentation is
+available at `/swagger-ui/index.html`; health is available at
+`/actuator/health`.
 
-- `POST /api/auth/login` — returns access + refresh tokens
-- `POST /api/auth/refresh` — rotates the refresh token and returns a fresh pair
-- `GET /api/auth/me` — returns the current authenticated user
-- `POST /api/auth/reset-password` — ADMIN-only password reset
+## Optional integrations
 
-## WhatsApp notification config
+Set these values only when the corresponding integration is enabled:
 
-The backend now includes an admin-only WhatsApp send endpoint backed by the
-Meta WhatsApp Cloud API:
+```text
+EMAIL_ENABLED=true
+EMAIL_FROM=noreply@example.com
+MAIL_HOST=smtp.example.com
+MAIL_PORT=587
+MAIL_USERNAME=<smtp user>
+MAIL_PASSWORD=<smtp password>
 
-- `POST /api/admin/notifications/whatsapp`
-- `POST /api/admin/notifications/email`
-- `POST /api/admin/notifications/html-to-pdf`
+WHATSAPP_ENABLED=true
+WHATSAPP_PHONE_NUMBER_ID=<Meta phone number id>
+WHATSAPP_ACCESS_TOKEN=<Meta access token>
+WHATSAPP_API_VERSION=v20.0
+```
 
-`/api/admin/notifications/email` supports optional attachments by passing
-`attachments` in request payload, where each item has:
-- `fileName`
-- `contentType`
-- `base64Content`
+## API areas
 
-`/api/admin/notifications/html-to-pdf` accepts HTML content, generates a PDF,
-and sends it via email and/or WhatsApp document:
-- `htmlContent` (required)
-- `pdfFileName` (optional, defaults to generated-document.pdf)
-- `email` / `emailSubject` / `emailMessage` (optional)
-- `whatsappPhoneNumber` / `whatsappCaption` (optional)
-- at least one target (`email` or `whatsappPhoneNumber`) is required
+| Area | Main paths |
+| --- | --- |
+| Authentication | `/api/auth/**` |
+| Admin | `/api/admin/**` |
+| Engineer | `/api/engineer/**` |
+| API documentation | `/swagger-ui/**`, `/v3/api-docs/**` |
+| Health | `/actuator/health` |
 
-Set these environment variables before using it:
+Admin and engineer endpoints require a JWT in the
+`Authorization: Bearer <token>` header. Admin users can refresh the encrypted
+runtime security configuration with
+`POST /api/admin/security/config/refresh`.
+
+## Project layout
+
+```text
+src/main/java/com/apollo/elevator/
+  authorization/          Authentication and users
+  customer/               Customers, lifts, AMC contracts
+  documents/              PDF generation
+  engineer/               Engineer dashboard and service reports
+  enquiry/                Contact enquiries
+  notification/           Email and WhatsApp delivery
+  quotation/              Quotations
+  securityconfiguration/  JWT and encrypted runtime secrets
+  workorder/               Work-order workflow
+  common/                 API errors and shared configuration
+src/main/resources/
+  db/migration/            Versioned Flyway migrations
+  templates/pdf/           Thymeleaf document templates
+```
+
+## Verification
 
 ```bash
-export WHATSAPP_ENABLED=true
-export WHATSAPP_PHONE_NUMBER_ID="<meta phone number id>"
-export WHATSAPP_ACCESS_TOKEN="<meta permanent access token>"
-export WHATSAPP_API_VERSION="v20.0"
-export EMAIL_ENABLED=true
-export EMAIL_FROM="noreply@yourdomain.com"
-export MAIL_HOST="<smtp host>"
-export MAIL_PORT="587"
-export MAIL_USERNAME="<smtp username>"
-export MAIL_PASSWORD="<smtp password>"
+.\gradlew.bat test
+.\gradlew.bat build
 ```
 
-You can send from Outlook to Gmail (or Gmail to Outlook) by switching SMTP
-host/credentials to the sender account's provider and keeping:
-- `MAIL_USERNAME` = actual sender mailbox login
-- `EMAIL_FROM` = same sender mailbox address
-
-Examples:
-- Gmail SMTP: `MAIL_HOST=smtp.gmail.com`, `MAIL_PORT=587`
-- Outlook SMTP: `MAIL_HOST=smtp.office365.com`, `MAIL_PORT=587`
-
-## Rotating the JWT secret later
-
-Update the row in `system_secret` (encrypt the new value with the same
-`AesEncryptionUtil` logic — a small admin CLI or endpoint for this is a
-natural next addition), then call:
-```
-POST /api/admin/security/config/refresh   (ADMIN token required)
-```
-No restart needed — existing tokens signed with the old secret will stop
-validating, so this effectively logs everyone out. Plan rotations accordingly.
-
-## Deploying free (Render/Railway)
-
-- Add `APP_MASTER_KEY`, `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` as environment
-  variables in the platform's dashboard — not in any file you commit.
-- Add `WHATSAPP_ENABLED`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`,
-  and optionally `WHATSAPP_API_VERSION` when enabling WhatsApp delivery.
-- Add `EMAIL_ENABLED`, `EMAIL_FROM`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`,
-  and `MAIL_PASSWORD` when enabling email delivery.
-- Point `DB_URL` at your free Postgres instance (Supabase/Neon/Render Postgres).
-- Flyway runs the migrations in `db/migration/` automatically on startup.
-
-## What's next
-
-- `/api/admin/**` business endpoints: Elevator, AMC, Billing, Modernization,
-  QC checklist, Scheduling, and reporting flows from the earlier project guide.
-- `/api/engineer/**` endpoints: assigned visits, QC submission, and job status
-  updates.
-- Role-based row-level restrictions (e.g. an ENGINEER should only see their
-  own assigned visits).
-- Additional notification channels (email/SMS) on top of the new notification
-  log and WhatsApp foundation.
+Keep database credentials, API tokens, generated PDFs, and local build output
+out of source control. See `BackendRequirements.md` for the detailed
+functional endpoint specification.

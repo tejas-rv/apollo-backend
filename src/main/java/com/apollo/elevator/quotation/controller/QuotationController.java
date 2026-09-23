@@ -5,7 +5,6 @@ import com.apollo.elevator.quotation.model.dto.CreateQuotationRequest;
 import com.apollo.elevator.quotation.model.dto.QuotationPendingResponse;
 import com.apollo.elevator.quotation.model.dto.QuotationResponse;
 import com.apollo.elevator.quotation.model.dto.UpdateQuotationStatusRequest;
-import com.apollo.elevator.quotation.model.enums.QuotationStatus;
 import com.apollo.elevator.quotation.service.QuotationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

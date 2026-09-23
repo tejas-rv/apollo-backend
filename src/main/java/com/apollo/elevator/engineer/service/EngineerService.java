@@ -6,7 +6,6 @@ import com.apollo.elevator.common.exception.ResourceNotFoundException;
 import com.apollo.elevator.customer.model.entity.AmcContract;
 import com.apollo.elevator.customer.model.entity.Customer;
 import com.apollo.elevator.customer.model.entity.Lift;
-import com.apollo.elevator.customer.repository.AmcContractRepository;
 import com.apollo.elevator.customer.repository.CustomerRepository;
 import com.apollo.elevator.documents.service.PdfTemplateService;
 import com.apollo.elevator.engineer.model.dto.*;
@@ -40,7 +39,6 @@ public class EngineerService {
 
     private final ServiceReportRepository reportRepository;
     private final CustomerRepository customerRepository;
-    private final AmcContractRepository amcContractRepository;
     private final UserRepository userRepository;
     private final PdfTemplateService pdfTemplateService;
     private final NotificationService notificationService;
