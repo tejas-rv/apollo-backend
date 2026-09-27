@@ -94,3 +94,11 @@ springdoc:
 
   default-consumes-media-type: application/json
   default-produces-media-type: application/json
+
+google:
+  drive:
+    enabled: ${GOOGLE_DRIVE_ENABLED:true}
+    application-name: ${GOOGLE_DRIVE_APPLICATION_NAME:apollo-elevators}
+    oauth-client-path: ${GOOGLE_DRIVE_OAUTH_CLIENT_PATH:C:/Personal/Apollo Elevators/apollo-elevator-oauth-client.json}
+    token-directory: ${GOOGLE_DRIVE_TOKEN_DIRECTORY:C:/Personal/Apollo Elevators/google-drive-tokens}
+    folder-id: ${GOOGLE_DRIVE_FOLDER_ID:1dsvOfS87yLEa9RYBfYN5g5Ay85J0qGBa}

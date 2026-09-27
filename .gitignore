@@ -8,3 +8,7 @@ out/
 .env.*
 !.env.example
 src/main/resources/config/application-neon.yml
+*service-account*.json
+*drive-secrets*.json
+*oauth-client*.json
+google-drive-tokens/

@@ -43,7 +43,13 @@ public class DocumentService {
     private final PdfTemplateService pdfTemplateService;
     private final UpiQrCodeService upiQrCodeService;
 
-    public record PdfResult(byte[] pdfBytes, String fileName) {}
+    /**
+     * @param documentDate the real-world date the document pertains to (e.g. invoice date,
+     *                     AMC contract start date) — not the generation timestamp. Used by
+     *                     callers (e.g. Google Drive uploads) that need to date-stamp the
+     *                     stored filename with the document's own date rather than "today".
+     */
+    public record PdfResult(byte[] pdfBytes, String fileName, LocalDate documentDate) {}
 
     /**
      * Generates a customer document (AMC_CONTRACT currently) based on documentType.
@@ -53,7 +59,7 @@ public class DocumentService {
         return switch (documentType) {
             case AMC_CONTRACT -> {
                 AmcContractPdfResult r = generateAmcContractPdfResult(customerId);
-                yield new PdfResult(r.pdfBytes(), r.fileName());
+                yield new PdfResult(r.pdfBytes(), r.fileName(), r.documentDate());
             }
             default -> throw new IllegalArgumentException(
                     "documentType " + documentType + " is not supported for customer documents. Use POST /bills instead.");
@@ -73,8 +79,26 @@ public class DocumentService {
         String entityPrefix = billRequest.entity() == BillRequest.BillingEntity.APOLLO_ELEVATOR
                 ? "apollo_elevator" : "apollo_elevator_services";
         String fileName = entityPrefix + "_bill_" + sanitize(billRequest.bill().invoiceNumber()) + ".pdf";
+        LocalDate invoiceDate = parseInvoiceDate(billRequest.bill().invoiceDate());
 
-        return new PdfResult(pdfBytes, fileName);
+        return new PdfResult(pdfBytes, fileName, invoiceDate);
+    }
+
+    /**
+     * Parses the bill's display-formatted invoice date ("dd/MM/yyyy") back into a
+     * {@link LocalDate}, falling back to today's date if it is missing or unparseable
+     * (the invoice must already have passed validation by this point, so this is defensive).
+     */
+    private LocalDate parseInvoiceDate(String invoiceDate) {
+        if (invoiceDate == null || invoiceDate.isBlank()) {
+            return LocalDate.now();
+        }
+        try {
+            return LocalDate.parse(invoiceDate, DATE_FMT);
+        } catch (java.time.format.DateTimeParseException exception) {
+            log.warn("Could not parse invoice date '{}', defaulting to today", invoiceDate);
+            return LocalDate.now();
+        }
     }
 
     private String sanitize(String s) {
@@ -263,7 +287,7 @@ public class DocumentService {
             }
             if (item.quantity() != null && !item.quantity().isBlank()) {
                 try {
-                    double quantity = Double.parseDouble(item.quantity());
+                    double quantity = Double.parseDouble(leadingNumericToken(item.quantity()));
                     if (quantity < 0) {
                         throw new IllegalArgumentException("Line item quantity cannot be negative.");
                     }
@@ -272,6 +296,17 @@ public class DocumentService {
                 }
             }
         }
+    }
+
+    /**
+     * Extracts the leading numeric token from a display-style quantity value
+     * (e.g. "01 No" -&gt; "01") so unit suffixes used for PDF display don't
+     * break numeric validation.
+     */
+    private String leadingNumericToken(String quantity) {
+        String trimmed = quantity.trim();
+        int splitIndex = trimmed.indexOf(' ');
+        return splitIndex > 0 ? trimmed.substring(0, splitIndex) : trimmed;
     }
 
     private double validateAndNormalizeGstPercentage(Double gstPercentage) {
@@ -342,15 +377,20 @@ public class DocumentService {
         Lift lift = pickPrimaryLift(customer);
         AmcContract amc = pickBestAmcContract(lift, customerId);
         String fileName = customer.getCustomerCode() + "_apollo_amc_" + resolveAmcYear(amc) + ".pdf";
+        LocalDate documentDate = amc.getStartDate() != null ? amc.getStartDate()
+                : amc.getEndDate() != null ? amc.getEndDate() : LocalDate.now();
 
         log.info("Building PDF for contractNumber={}, fileName={}", amc.getContractNumber(), fileName);
         Map<String, Object> variables = buildTemplateVariables(customer, lift, amc);
         byte[] pdfBytes = pdfTemplateService.renderToPdf("pdf/amc-contract", variables);
         log.info("AMC contract PDF result ready. fileName={}, sizeBytes={}", fileName, pdfBytes.length);
-        return new AmcContractPdfResult(pdfBytes, fileName);
+        return new AmcContractPdfResult(pdfBytes, fileName, documentDate);
     }
 
-    public record AmcContractPdfResult(byte[] pdfBytes, String fileName) {}
+    /**
+     * @param documentDate the AMC contract's own start (or end) date — not today's date.
+     */
+    public record AmcContractPdfResult(byte[] pdfBytes, String fileName, LocalDate documentDate) {}
 
     /**
      * Generates an AMC contract PDF for the given customer.

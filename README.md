@@ -65,7 +65,32 @@ WHATSAPP_ENABLED=true
 WHATSAPP_PHONE_NUMBER_ID=<Meta phone number id>
 WHATSAPP_ACCESS_TOKEN=<Meta access token>
 WHATSAPP_API_VERSION=v20.0
+
+GOOGLE_DRIVE_ENABLED=true
+GOOGLE_DRIVE_APPLICATION_NAME=apollo-elevators
+GOOGLE_DRIVE_OAUTH_CLIENT_PATH=C:\path\outside\the\repository\apollo-elevator-oauth-client.json
+GOOGLE_DRIVE_TOKEN_DIRECTORY=C:\path\outside\the\repository\google-drive-tokens
+GOOGLE_DRIVE_FOLDER_ID=<Apollo Elevator Data folder ID>
 ```
+
+Google Drive integration uses OAuth 2.0 user authorization (installed-app
+flow), not a service account. On first startup, a browser window opens for
+the Google account to grant Drive access; the resulting refresh token is
+persisted under `GOOGLE_DRIVE_TOKEN_DIRECTORY` so later restarts do not
+require signing in again. Uploads are stored under
+`<customer database ID>_<customer name>/Contracts`, `Bills`, or
+`Service History`. Contract filenames receive a `_YYYY` suffix; bill and
+service-history filenames receive a `_ddMMMyyyy` suffix. The integration does
+not change file permissions or make uploaded files public.
+
+To generate and upload a customer's documents without supplying any files,
+call `POST /api/google-drive/customer-documents/{customerId}`. The endpoint
+generates the AMC contract PDF, GST bill PDF, and one service-history PDF per
+recorded service visit using the existing document-generation services, then
+uploads each to the customer's `Contracts`, `Bills`, or `Service History`
+subfolder. `contract` and `bill` are `null` in the response when the customer
+has no corresponding data (e.g. no active AMC contract); `serviceHistory` is a
+list and may be empty.
 
 ## API areas
 

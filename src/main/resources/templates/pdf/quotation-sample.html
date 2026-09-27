@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Quotation (Sample) - Apollo Elevator</title>
+    <style>
+        body { font-family: 'NotoSans', Arial, sans-serif; color: #1c2735; font-size: 12px; margin: 30px; }
+        .header { display: table; width: 100%; margin-bottom: 20px; }
+        .header img { height: 55px; }
+        .company-name { font-size: 18px; font-weight: bold; }
+        .company-address { font-size: 10px; color: #555; }
+        h1 { font-size: 18px; text-align: center; margin: 20px 0; text-transform: uppercase; letter-spacing: 1px; }
+        .sample-banner { background: #fff5dd; color: #986e18; padding: 8px 12px; border-radius: 6px; font-size: 11px; margin-bottom: 18px; }
+        table.meta { width: 100%; margin-bottom: 20px; }
+        table.meta td { padding: 4px 0; vertical-align: top; }
+        table.meta td.label { width: 160px; color: #6d7785; }
+        table.items { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table.items th, table.items td { border: 1px solid #d9dee5; padding: 8px; text-align: left; font-size: 11px; }
+        table.items th { background: #f4f6f9; }
+        .footer-note { margin-top: 30px; font-size: 10px; color: #6d7785; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <img th:src="${logoDataUri}" alt="Apollo Elevators"/>
+    <div class="company-name">APOLLO ELEVATORS</div>
+    <div class="company-address">No. 14, Karihobana Halli, T.G. Palya, Bangalore &#8211; 560 058</div>
+    <div class="company-address">Mob.: 89719 74009 / 91483 28396 / 79757 44357 &#160;|&#160; Mail: apolloelevator1@gmail.com</div>
+</div>
+
+<h1>Quotation</h1>
+<div class="sample-banner">
+    This is an auto-generated <strong>sample</strong> quotation for Google Drive integration testing.
+    Replace with a real Quotation once a dedicated generation module is implemented.
+</div>
+
+<table class="meta">
+    <tr><td class="label">Quotation No.</td><td th:text="${quotationNumber}">QT-0001</td></tr>
+    <tr><td class="label">Date</td><td th:text="${generatedDate}">01 Jan 2026</td></tr>
+    <tr><td class="label">Customer</td><td th:text="${customerName}">Customer Name</td></tr>
+    <tr><td class="label">Customer Code</td><td th:text="${customerCode}">CUST-001</td></tr>
+    <tr><td class="label">Address</td><td th:text="${customerAddress}">Address</td></tr>
+</table>
+
+<table class="items">
+    <thead>
+    <tr><th>#</th><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>1</td>
+        <td>Sample line item &#8211; replace with actual quoted item</td>
+        <td>1</td>
+        <td>&#8377;0.00</td>
+        <td>&#8377;0.00</td>
+    </tr>
+    </tbody>
+</table>
+
+<div class="footer-note">Generated automatically by Apollo Elevators backend &#8211; sample document, not a final priced quotation.</div>
+
+</body>
+</html>

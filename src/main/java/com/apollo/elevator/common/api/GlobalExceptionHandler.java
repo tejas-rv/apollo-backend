@@ -6,6 +6,9 @@ import com.apollo.elevator.common.exception.NotificationDeliveryException;
 import com.apollo.elevator.common.exception.ResourceNotFoundException;
 import com.apollo.elevator.common.exception.UnauthorizedException;
 import com.apollo.elevator.common.exception.UnsupportedDocumentTypeException;
+import com.apollo.elevator.googledrive.exception.GoogleDriveAuthenticationException;
+import com.apollo.elevator.googledrive.exception.GoogleDriveOperationException;
+import com.apollo.elevator.googledrive.exception.GoogleDrivePermissionException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Instant;
@@ -149,6 +152,24 @@ public class GlobalExceptionHandler {
             exception.getMessage()
         );
         return buildResponse(HttpStatus.FORBIDDEN, "You are not allowed to access this resource", request, Map.of());
+    }
+
+    @ExceptionHandler(GoogleDrivePermissionException.class)
+    public ResponseEntity<ApiErrorResponse> handleGoogleDrivePermission(
+            GoogleDrivePermissionException exception,
+            HttpServletRequest request
+    ) {
+        log.warn("Google Drive permission denied for path={}", request.getRequestURI());
+        return buildResponse(HttpStatus.FORBIDDEN, exception.getMessage(), request, Map.of());
+    }
+
+    @ExceptionHandler({GoogleDriveAuthenticationException.class, GoogleDriveOperationException.class})
+    public ResponseEntity<ApiErrorResponse> handleGoogleDriveFailure(
+            RuntimeException exception,
+            HttpServletRequest request
+    ) {
+        log.error("Google Drive operation failed for path={}", request.getRequestURI(), exception);
+        return buildResponse(HttpStatus.BAD_GATEWAY, exception.getMessage(), request, Map.of());
     }
 
     @ExceptionHandler(IllegalStateException.class)

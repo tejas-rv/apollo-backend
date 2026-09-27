@@ -14,6 +14,8 @@ public interface ServiceReportRepository extends JpaRepository<ServiceReport, Lo
 
     Page<ServiceReport> findByEngineerUserIdOrderByVisitDateDesc(Long engineerUserId, Pageable pageable);
 
+    List<ServiceReport> findByCustomerIdOrderByVisitDateDesc(Long customerId);
+
     List<ServiceReport> findByEngineerUserIdAndVisitDate(Long engineerUserId, LocalDate visitDate);
 
     long countByEngineerUserIdAndStatus(Long engineerUserId, ReportStatus status);

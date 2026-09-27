@@ -64,6 +64,10 @@ dependencies {
     implementation("com.google.zxing:core:3.5.3")
     implementation("com.google.zxing:javase:3.5.3")
 
+    // Google Drive (OAuth 2.0 user authorization — installed-app flow)
+    implementation("com.google.apis:google-api-services-drive:v3-rev20260913-2.0.0")
+    implementation("com.google.oauth-client:google-oauth-client-jetty:1.39.0")
+
     // Swagger
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
     implementation("com.openhtmltopdf:openhtmltopdf-pdfbox:1.0.10")
