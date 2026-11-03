@@ -112,6 +112,7 @@ list and may be empty.
 | Authentication | `/api/auth/**` |
 | Admin | `/api/admin/**` |
 | Engineer | `/api/engineer/**` |
+| Serviceability (ADMIN) | `/api/serviceability/**` |
 | API documentation | `/swagger-ui/**`, `/v3/api-docs/**` |
 | Health | `/actuator/health` |
 
@@ -119,6 +120,48 @@ Admin and engineer endpoints require a JWT in the
 `Authorization: Bearer <token>` header. Admin users can refresh the encrypted
 runtime security configuration with
 `POST /api/admin/security/config/refresh`.
+
+### Serviceability and engineer allocation
+
+The admin Serviceability screen is available at `/app/serviceability`. Flyway
+migration `V23` creates configurable Bengaluru zones, PIN-code mappings and
+audit history, effective-dated engineer-zone assignments, engineer capacity
+settings, and service-assignment history. The migration seeds only the four
+zone definitions; it deliberately does not seed unverified PIN-code data.
+
+Administrators can manage zones and mappings, configure primary and backup
+engineers, review allocation suggestions, confirm automatic assignments,
+reassign visits, and create/resequence a daily plan. Automatic allocation
+requires an active, supervisor-verified PIN-code mapping and an active zone
+engineer. Ambiguous or unverified records remain unassigned with an explicit
+reason. Assignment priority is CRITICAL when overdue, HIGH when due today,
+MEDIUM within three days, NORMAL within seven days, and LOW thereafter.
+Primary engineers are preferred; available backups are used when primary
+capacity is reached. The allocator balances job counts within configured daily
+capacity; no road-distance or route optimisation is claimed.
+
+PIN-code bulk import accepts CSV, XLS, and XLSX files (maximum 5 MB) with
+`pincode`, `locality`, and `source` columns; `district`, `state`,
+`postalDivision`, and `zoneId` are optional. Imported rows are always marked
+UNVERIFIED and require supervisor review before automatic allocation. Use
+official India Post references for postal data; postal divisions must not be
+treated as Apollo zones.
+
+Priority thresholds and default engineer capacity can be configured with:
+
+```text
+APOLLO_SERVICEABILITY_MEDIUM_DUE_WITHIN_DAYS=3
+APOLLO_SERVICEABILITY_NORMAL_DUE_WITHIN_DAYS=7
+APOLLO_SERVICEABILITY_DEFAULT_DAILY_CAPACITY=5
+```
+
+The main API paths are `GET /api/serviceability/dashboard`,
+`GET /api/serviceability/zones`, `GET|POST /api/serviceability/pincodes`,
+`POST /api/serviceability/pincodes/import`,
+`POST /api/serviceability/engineer-zone-assignments`,
+`POST /api/serviceability/assign` (preview with `confirm=false`, then submit
+again with `confirm=true`), `GET /api/serviceability/daily-plan`, and
+`PUT /api/serviceability/assignments/{id}/reassign`.
 
 ### Customer data import modes
 

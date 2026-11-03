@@ -4,6 +4,7 @@ import com.apollo.elevator.common.util.LogMaskingUtil;
 import com.apollo.elevator.authorization.model.entity.User;
 import com.apollo.elevator.authorization.repository.UserRepository;
 import com.apollo.elevator.authorization.service.UserManagementService;
+import com.apollo.elevator.serviceability.service.ServiceAllocationService;
 import com.apollo.elevator.common.exception.ResourceNotFoundException;
 import com.apollo.elevator.customer.model.entity.AmcContract;
 import com.apollo.elevator.customer.model.entity.Customer;
@@ -46,6 +47,7 @@ public class EngineerService {
     private final NotificationService notificationService;
     private final EmailProperties emailProperties;
     private final UserManagementService userManagementService;
+    private final ServiceAllocationService serviceAllocationService;
 
     /**
      * Resolves user ID from username (for JWT auth context).
@@ -123,10 +125,14 @@ public class EngineerService {
         ServiceReport saved = reportRepository.save(report);
         log.info("Service report submitted. reportId={}, engineerId={}, customerId={}", saved.getId(), engineerUserId, req.customerId());
         Long savedReportId = saved.getId();
-        ServiceVisitCompletion.complete(customer, saved, userManagementService.visitMatchNames(engineer))
-                .ifPresent(visit -> log.info("AMC visit marked completed. reportId={}, amcContractId={}",
-                        savedReportId, report.getAmcContractId()));
+        Optional<com.apollo.elevator.customer.model.entity.ServiceHistory> completedVisit =
+                ServiceVisitCompletion.complete(customer, saved, userManagementService.visitMatchNames(engineer));
         customerRepository.save(customer);
+        completedVisit.ifPresent(visit -> {
+            serviceAllocationService.markVisitCompleted(visit.getId());
+            log.info("AMC visit marked completed. reportId={}, amcContractId={}, serviceVisitId={}",
+                    savedReportId, report.getAmcContractId(), visit.getId());
+        });
 
         // Generate PDF and email admin
         try {

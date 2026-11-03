@@ -7,6 +7,7 @@ import com.apollo.elevator.servicevisit.model.dto.ServiceVisitFilter;
 import com.apollo.elevator.servicevisit.model.dto.ServiceVisitRow;
 import com.apollo.elevator.servicevisit.model.dto.ServiceVisitSummary;
 import com.apollo.elevator.servicevisit.service.ServiceVisitService;
+import com.apollo.elevator.serviceability.service.ServiceAllocationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -34,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ServiceVisitController {
 
     private final ServiceVisitService serviceVisitService;
+    private final ServiceAllocationService serviceAllocationService;
 
     @GetMapping
     @Operation(summary = "Search AMC service visits (newest first)")
@@ -69,6 +71,11 @@ public class ServiceVisitController {
                                                       @Valid @RequestBody RescheduleVisitRequest request,
                                                       Authentication authentication) {
         String user = authentication == null ? null : authentication.getName();
-        return ResponseEntity.ok(serviceVisitService.reschedule(visitId, request, user));
+        ServiceVisitRow row = serviceVisitService.reschedule(visitId, request, user);
+        if (row.id().equals(visitId)) {
+            serviceAllocationService.syncRescheduledVisit(
+                    visitId, row.serviceDate(), row.assignedEngineerId(), user);
+        }
+        return ResponseEntity.ok(row);
     }
 }
