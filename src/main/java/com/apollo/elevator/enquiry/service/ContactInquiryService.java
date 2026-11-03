@@ -1,10 +1,12 @@
 package com.apollo.elevator.enquiry.service;
 
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import com.apollo.elevator.common.exception.ConflictException;
 import com.apollo.elevator.common.exception.NotificationDeliveryException;
 import com.apollo.elevator.common.exception.ResourceNotFoundException;
 import com.apollo.elevator.customer.model.dto.LiftCustomerDetails;
 import com.apollo.elevator.customer.service.CustomerService;
+import com.apollo.elevator.common.validation.IndianFormats;
 import com.apollo.elevator.enquiry.model.dto.ContactInquiryRequest;
 import com.apollo.elevator.enquiry.model.dto.ContactInquiryResponse;
 import com.apollo.elevator.enquiry.model.dto.CustomerConversionResponse;
@@ -42,9 +44,9 @@ public class ContactInquiryService {
 
     @Transactional
     public SubmitInquiryResponse submit(ContactInquiryRequest request) {
-        String normalizedPhone = normalizePhone(request.phoneNumber());
-        if (normalizedPhone.length() < 10) {
-            throw new IllegalArgumentException("Phone number must have at least 10 digits");
+        String normalizedPhone = IndianFormats.normalizeMobile(request.phoneNumber());
+        if (normalizedPhone == null) {
+            throw new IllegalArgumentException("Phone number " + IndianFormats.MOBILE_MESSAGE);
         }
         if (request.consentAccepted() == null || !request.consentAccepted()) {
             throw new IllegalArgumentException("Consent must be accepted");
@@ -68,7 +70,7 @@ public class ContactInquiryService {
                 "Contact inquiry submitted. inquiryId={}, inquiryType={}, fullName={}",
                 inquiry.getId(),
                 inquiry.getInquiryType(),
-                inquiry.getFullName()
+                LogMaskingUtil.mask("fullName", inquiry.getFullName())
         );
 
         sendAdminNotification(inquiry);
@@ -117,7 +119,8 @@ public class ContactInquiryService {
         inquiry.setStatus(status);
         inquiry.setModifiedBy(modifiedBy);
         inquiry = contactInquiryRepository.save(inquiry);
-        log.info("Contact inquiry status updated. inquiryId={}, status={}, modifiedBy={}", inquiry.getId(), inquiry.getStatus(), modifiedBy);
+        log.info("Contact inquiry status updated. inquiryId={}, status={}, modifiedBy={}",
+                inquiry.getId(), inquiry.getStatus(), LogMaskingUtil.mask("username", modifiedBy));
         return toResponse(inquiry);
     }
 
@@ -156,11 +159,6 @@ public class ContactInquiryService {
             throw new IllegalArgumentException("Work order must be active or approved before converting to customer.");
         }
 
-        String customerCode = request.getCustomerCode() == null || request.getCustomerCode().isBlank()
-                ? generateCustomerCode(request.getCustomerName())
-                : request.getCustomerCode().trim();
-        request.setCustomerCode(customerCode);
-
         Long customerId = customerService.createCustomer(request).getId();
         inquiry.setCustomerId(customerId);
         inquiry.setStatus(InquiryStatus.COMPLETED);
@@ -172,7 +170,7 @@ public class ContactInquiryService {
         workOrderRepository.save(workOrder);
 
         log.info("Enquiry converted to customer. enquiryId={}, customerId={}, modifiedBy={}",
-                enquiryId, customerId, modifiedBy);
+                enquiryId, customerId, LogMaskingUtil.mask("username", modifiedBy));
         return new CustomerConversionResponse(enquiryId, customerId, "COMPLETED");
     }
 
@@ -183,15 +181,6 @@ public class ContactInquiryService {
 
     private boolean hasAcceptedQuotation(Long enquiryId) {
         return quotationRepository.existsByEnquiryIdAndStatus(enquiryId, QuotationStatus.ACCEPTED);
-    }
-
-    private String generateCustomerCode(String fullName) {
-        String normalized = fullName == null ? "CUSTOMER" : fullName.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
-        if (normalized.isBlank()) {
-            normalized = "CUSTOMER";
-        }
-        String prefix = normalized.length() > 20 ? normalized.substring(0, 20) : normalized;
-        return prefix + "-" + System.currentTimeMillis();
     }
 
     private void sendAdminNotification(ContactInquiry inquiry) {
@@ -241,10 +230,6 @@ public class ContactInquiryService {
                     inquiry.getId(), inquiry.getEmail(), exception.getMessage()
             );
         }
-    }
-
-    private String normalizePhone(String phoneNumber) {
-        return phoneNumber == null ? "" : phoneNumber.replaceAll("\\D", "");
     }
 
     private String nullSafe(String value) {

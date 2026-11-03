@@ -1,5 +1,6 @@
 package com.apollo.elevator.workorder.service;
 
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import com.apollo.elevator.common.exception.ConflictException;
 import com.apollo.elevator.common.exception.ResourceNotFoundException;
 import com.apollo.elevator.enquiry.model.entity.ContactInquiry;
@@ -61,7 +62,8 @@ public class WorkOrderService {
 
         WorkOrder saved = workOrderRepository.save(workOrder);
         log.info("Work order created. workOrderId={}, enquiryId={}, quotationId={}, createdBy={}",
-                saved.getId(), enquiryId, acceptedQuotation.getId(), createdBy);
+                saved.getId(), enquiryId, acceptedQuotation.getId(),
+                LogMaskingUtil.mask("username", createdBy));
         return new WorkOrderConversionResponse(enquiryId, acceptedQuotation.getId(), saved.getId(), "WORK_ORDER");
     }
 

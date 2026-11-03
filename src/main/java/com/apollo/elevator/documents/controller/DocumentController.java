@@ -1,6 +1,8 @@
 package com.apollo.elevator.documents.controller;
 
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import com.apollo.elevator.common.api.ApiErrorResponse;
+import com.apollo.elevator.common.validation.IndianFormats;
 import com.apollo.elevator.documents.model.dto.BillPreviewResponse;
 import com.apollo.elevator.documents.model.dto.BillRequest;
 import com.apollo.elevator.documents.model.dto.PdfGenerationRequest;
@@ -78,7 +80,8 @@ public class DocumentController {
     ) {
         log.info("Document PDF request. customerId={}, documentType={}", customerId, documentType);
         DocumentService.PdfResult result = documentService.generateCustomerDocument(customerId, documentType);
-        log.info("Document PDF ready. fileName={}, sizeBytes={}", result.fileName(), result.pdfBytes().length);
+        log.info("Document PDF ready. fileName={}, sizeBytes={}",
+                LogMaskingUtil.mask("fileName", result.fileName()), result.pdfBytes().length);
         return pdfResponse(result);
     }
 
@@ -98,6 +101,24 @@ public class DocumentController {
             @PathVariable Long customerId
     ) {
         return generateCustomerDocument(customerId, AMC_CONTRACT);
+    }
+
+    @GetMapping("/customers/{customerId}/amc-contracts/{amcContractId}")
+    @Operation(summary = "Generate the PDF of a specific AMC contract of the customer")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "PDF generated",
+                    content = @Content(mediaType = MediaType.APPLICATION_PDF_VALUE,
+                            schema = @Schema(type = "string", format = "binary"))),
+            @ApiResponse(responseCode = "404", description = "Customer or AMC contract not found",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    public ResponseEntity<byte[]> generateAmcContractPdfById(
+            @PathVariable Long customerId,
+            @PathVariable Long amcContractId
+    ) {
+        log.info("AMC contract PDF request. customerId={}, amcContractId={}", customerId, amcContractId);
+        DocumentService.AmcContractPdfResult r = documentService.generateAmcContractPdfResult(customerId, amcContractId);
+        return pdfResponse(new DocumentService.PdfResult(r.pdfBytes(), r.fileName(), r.documentDate()));
     }
 
     // =========================================================================
@@ -194,7 +215,8 @@ public class DocumentController {
         log.info("Bill PDF generate request. documentType={}, invoiceNumber={}, entity={}",
                 documentType, billRequest.bill().invoiceNumber(), billRequest.entity());
         DocumentService.PdfResult result = documentService.generateBillPdf(documentType, billRequest);
-        log.info("Bill PDF ready. fileName={}, sizeBytes={}", result.fileName(), result.pdfBytes().length);
+        log.info("Bill PDF ready. fileName={}, sizeBytes={}",
+                LogMaskingUtil.mask("fileName", result.fileName()), result.pdfBytes().length);
         return pdfResponse(result);
     }
 
@@ -221,7 +243,11 @@ public class DocumentController {
             @RequestParam String to,
             @Valid @RequestBody BillRequest billRequest
     ) {
-        log.info("Send bill via email. documentType={}, to={}", documentType, to);
+        log.info("Send bill via email. documentType={}, to={}", documentType, LogMaskingUtil.mask("email", to));
+        if (to == null || !to.trim().matches(IndianFormats.EMAIL)) {
+            throw new IllegalArgumentException("Recipient email must be a valid email address");
+        }
+        to = to.trim();
         DocumentService.PdfResult pdf = documentService.generateBillPdf(documentType, billRequest);
         String base64 = java.util.Base64.getEncoder().encodeToString(pdf.pdfBytes());
         String subject = "Apollo Elevator – Bill " + billRequest.bill().invoiceNumber();
@@ -253,13 +279,18 @@ public class DocumentController {
     public ResponseEntity<NotificationResponse> sendBillWhatsapp(
             @Parameter(description = "Bill type: GST_BILL", required = true)
             @RequestParam DocumentType documentType,
-            @Parameter(description = "Recipient phone number in international format", required = true)
+            @Parameter(description = "Recipient 10-digit Indian mobile number (optionally prefixed with +91)", required = true)
             @RequestParam String phone,
             @Valid @RequestBody BillRequest billRequest
     ) {
-        log.info("Send bill via WhatsApp. documentType={}, phone={}", documentType, phone);
+        log.info("Send bill via WhatsApp. documentType={}, phone={}",
+                documentType, LogMaskingUtil.mask("phone", phone));
+        String mobile = IndianFormats.normalizeMobile(phone);
+        if (mobile == null) {
+            throw new IllegalArgumentException("Recipient phone " + IndianFormats.MOBILE_MESSAGE);
+        }
         DocumentService.PdfResult pdf = documentService.generateBillPdf(documentType, billRequest);
-        NotificationResponse result = notificationService.sendBillWhatsAppAsResponse(phone, pdf.fileName(), pdf.pdfBytes(),
+        NotificationResponse result = notificationService.sendBillWhatsAppAsResponse("91" + mobile, pdf.fileName(), pdf.pdfBytes(),
                 "Bill " + billRequest.bill().invoiceNumber() + " from Apollo Elevator");
         return ResponseEntity.ok(result);
     }

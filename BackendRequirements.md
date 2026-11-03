@@ -52,10 +52,17 @@ The system must provide stateless JWT-based authentication with the following be
   - ADMIN-only operation
   - invalidates active refresh tokens before resetting password
 
-- `POST /api/admin/users/engineers`
-  - ADMIN-only
-  - creates a new ENGINEER user
-  - hashes password using BCrypt before saving
+User management: staff accounts have a `user_type` of **ADMIN**, **OFFICE** (CEO, CXOs, office bearers; same security role as ADMIN) or **ENGINEER** (security role ENGINEER). Each has an optional `user_profile` (employee number, full name, phone, email, address, designation, joining date, etc.). All endpoints are ADMIN-only.
+
+- `GET /api/admin/users?type=ADMIN|OFFICE|ENGINEER` — staff list with profile summary; engineers also include workload (upcoming / overdue scheduled AMC visits, completed service reports, last service date)
+- `GET /api/admin/users/{id}` — profile; engineers also get stats, upcoming & overdue visits and the 10 most recent completed reports
+- `POST /api/admin/users` — `{username, password, userType, profile}`; BCrypt-hashes the password; duplicate username / employee number returns 409
+- `PUT /api/admin/users/{id}` — `{userType, profile}`; changing the security role revokes refresh tokens
+- `PATCH /api/admin/users/{id}/status` — `{ "enabled": false }` deactivates login and revokes refresh tokens
+- `DELETE /api/admin/users/{id}` — 204; users who have service reports cannot be deleted (409, deactivate instead)
+- Guards (409): you cannot change your own type, deactivate yourself or delete yourself, and the last active ADMIN-role user cannot be demoted, deactivated or deleted.
+  - Upcoming/overdue visits are SCHEDULED `amc_service_history` rows whose `engineer_name` matches the engineer's full name or username (case-insensitive).
+  - Completed services are the engineer's service reports in SUBMITTED or PDF_SENT status.
 
 Authorization rules:
 
@@ -169,15 +176,22 @@ The repository implements a two-step bill workflow:
 
 - `POST /api/admin/documents/bills/generate?documentType=...`
   - accepts the reviewed bill request body
-  - generates a PDF for either GST or non-GST bill
+  - recomputes every line amount as quantity × rate, the taxable total, GST, and SGST/CGST (each half of the GST rate) so edited bills are always consistent
+  - generates the GST bill PDF
 
 - `POST /api/admin/documents/bills/send-email?documentType=...&to=...`
   - generates the bill PDF and emails it to the provided recipient
 
-This supports:
+Only `GST_BILL` is supported; the non-GST bill has been removed.
 
-- `GST_BILL`
-- `WITHOUT_GST_BILL`
+#### Input validation (shared rules in `IndianFormats`)
+
+- Mobile: 10 digits starting with 6–9 (an optional `+91`/`91`/`0` prefix is stripped)
+- Pincode: 6 digits, first digit 1–9
+- Email: standard address format, max 150 characters
+- GSTIN and PAN: official Indian formats (uppercased)
+- Address: 5–500 characters; names, cities and states: letters and basic punctuation, max 100
+- Engineer username: 3–100 characters from `A–Z a–z 0–9 . _ @ -`
 
 ### 3.5 Messaging and notifications
 
@@ -308,7 +322,12 @@ Authentication:
 
 Admin user management:
 
-- `POST /api/admin/users/engineers`
+- `GET /api/admin/users` (optional `?type=ADMIN|OFFICE|ENGINEER`)
+- `POST /api/admin/users`
+- `GET /api/admin/users/{id}`
+- `PUT /api/admin/users/{id}`
+- `PATCH /api/admin/users/{id}/status`
+- `DELETE /api/admin/users/{id}`
 
 Customer management:
 

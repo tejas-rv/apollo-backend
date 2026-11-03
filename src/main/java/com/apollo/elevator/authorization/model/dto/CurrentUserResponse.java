@@ -4,6 +4,7 @@ public record CurrentUserResponse(
         Long id,
         String username,
         String role,
+        String userType,
         String email,
         String whatsapp,
         boolean enabled

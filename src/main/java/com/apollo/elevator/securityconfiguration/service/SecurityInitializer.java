@@ -1,8 +1,10 @@
 package com.apollo.elevator.securityconfiguration.service;
 
 import com.apollo.elevator.authorization.model.enums.Role;
+import com.apollo.elevator.authorization.model.enums.UserType;
 import com.apollo.elevator.authorization.model.entity.User;
 import com.apollo.elevator.authorization.repository.UserRepository;
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import com.apollo.elevator.securityconfiguration.model.entity.SystemSecret;
 import com.apollo.elevator.securityconfiguration.repository.SystemSecretRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +24,7 @@ import java.util.Base64;
  *     a random one on first run — you never have to hand-craft it).
  *  2. Ensures at least one ADMIN user exists so you're never locked out.
  *
- * The generated admin password is printed to the console ONCE — copy it and
- * change it immediately via the (to-be-built) user management endpoint.
+ * The generated admin password is never written to logs.
  */
 @Component
 @RequiredArgsConstructor
@@ -70,7 +71,8 @@ public class SecurityInitializer implements ApplicationRunner {
     }
 
     private void ensureDefaultAdmin() {
-        if (userRepository.existsByUsername("admin")) {
+        if (userRepository.existsByUsername("admin")
+                || !userRepository.findByRoleOrderByUsernameAsc(Role.ADMIN).isEmpty()) {
             return;
         }
         String generatedPassword = generateRandomPassword();
@@ -78,16 +80,17 @@ public class SecurityInitializer implements ApplicationRunner {
                 .username("admin")
                 .password(passwordEncoder.encode(generatedPassword))
                 .role(Role.ADMIN)
+                .userType(UserType.ADMIN)
                 .enabled(true)
                 .build();
         userRepository.save(admin);
 
-        log.warn("=============================================================");
-        log.warn(" Created default admin user.");
-        log.warn(" username: admin");
-        log.warn(" password: {}", generatedPassword);
-        log.warn(" This password is shown ONCE. Log in and change it immediately.");
-        log.warn("=============================================================");
+        log.warn(
+                "Created default admin user. username={}, temporaryPassword={}. "
+                        + "The generated password is not logged; configure credentials through an approved channel.",
+                "admin",
+                LogMaskingUtil.mask("password", generatedPassword)
+        );
     }
 
     private String generateRandomPassword() {

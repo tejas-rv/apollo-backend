@@ -1,6 +1,7 @@
 package com.apollo.elevator.notification.email.service;
 
 import com.apollo.elevator.common.exception.NotificationDeliveryException;
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
@@ -34,7 +35,7 @@ public class SmtpEmailClient implements EmailClient {
         int attachmentCount = attachments == null ? 0 : attachments.size();
         log.info(
                 "SMTP email send invoked. email={}, subjectLength={}, messageLength={}, attachmentCount={}",
-                email,
+                LogMaskingUtil.mask("email", email),
                 subject == null ? 0 : subject.length(),
                 message == null ? 0 : message.length(),
                 attachmentCount
@@ -68,13 +69,16 @@ public class SmtpEmailClient implements EmailClient {
 
             javaMailSender.send(mimeMessage);
             String providerMessageId = "smtp-" + UUID.randomUUID();
-            log.info("SMTP email sent successfully. email={}, providerMessageId={}", email, providerMessageId);
+            log.info("SMTP email sent successfully. email={}, providerMessageId={}",
+                    LogMaskingUtil.mask("email", email), providerMessageId);
             return new EmailDeliveryResult(providerMessageId);
         } catch (MessagingException exception) {
-            log.error("SMTP email composition failed. email={}", email, exception);
+            log.error("SMTP email composition failed. email={}, errorType={}",
+                    LogMaskingUtil.mask("email", email), exception.getClass().getSimpleName());
             throw new NotificationDeliveryException("Failed to compose email message", exception);
         } catch (MailException exception) {
-            log.error("SMTP email send failed. email={}", email, exception);
+            log.error("SMTP email send failed. email={}, errorType={}",
+                    LogMaskingUtil.mask("email", email), exception.getClass().getSimpleName());
             throw new NotificationDeliveryException("Failed to send email via SMTP", exception);
         }
     }

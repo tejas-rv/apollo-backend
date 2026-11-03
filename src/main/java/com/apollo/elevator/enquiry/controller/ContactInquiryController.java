@@ -1,5 +1,6 @@
 package com.apollo.elevator.enquiry.controller;
 
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import com.apollo.elevator.common.api.ApiErrorResponse;
 import com.apollo.elevator.enquiry.model.dto.ContactInquiryRequest;
 import com.apollo.elevator.enquiry.model.dto.ContactInquiryResponse;
@@ -74,7 +75,9 @@ public class ContactInquiryController {
             @RequestParam(defaultValue = "20") int size
     ) {
         log.info("Admin inquiry list requested. name={}, phone={}, status={}, from={}, to={}, page={}, size={}",
-                name, phone, status, from, to, page, size);
+                LogMaskingUtil.mask("name", name),
+                LogMaskingUtil.mask("phone", phone),
+                status, from, to, page, size);
         LocalDateTime fromDateTime = from == null ? null : from.atStartOfDay();
         LocalDateTime toDateTime = to == null ? null : to.atTime(23, 59, 59);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
@@ -108,7 +111,8 @@ public class ContactInquiryController {
             Authentication authentication
     ) {
         String modifiedBy = authentication != null ? authentication.getName() : "unknown";
-        log.info("Admin inquiry status update requested. inquiryId={}, status={}, modifiedBy={}", id, request.status(), modifiedBy);
+        log.info("Admin inquiry status update requested. inquiryId={}, status={}, modifiedBy={}",
+                id, request.status(), LogMaskingUtil.mask("username", modifiedBy));
         ContactInquiryResponse response = contactInquiryService.updateStatus(id, request.status(), modifiedBy);
         log.info("Admin inquiry status update completed. inquiryId={}, status={}", id, response.status());
         return ResponseEntity.ok(response);
@@ -121,7 +125,8 @@ public class ContactInquiryController {
             Authentication authentication
     ) {
         String modifiedBy = authentication != null ? authentication.getName() : "unknown";
-        log.info("Admin enquiry to work order conversion requested. enquiryId={}, modifiedBy={}", id, modifiedBy);
+        log.info("Admin enquiry to work order conversion requested. enquiryId={}, modifiedBy={}",
+                id, LogMaskingUtil.mask("username", modifiedBy));
         WorkOrderConversionResponse response = workOrderService.convertToWorkOrder(id, modifiedBy);
         log.info("Admin enquiry converted to work order. enquiryId={}, workOrderId={}", id, response.workOrderId());
         return ResponseEntity.ok(response);
@@ -135,7 +140,10 @@ public class ContactInquiryController {
             Authentication authentication
     ) {
         String modifiedBy = authentication != null ? authentication.getName() : "unknown";
-        log.info("Customer conversion requested. enquiryId={}, customerName={}, modifiedBy={}", id, request.getCustomerName(), modifiedBy);
+        log.info("Customer conversion requested. enquiryId={}, customerName={}, modifiedBy={}",
+                id,
+                LogMaskingUtil.mask("customerName", request.getCustomerName()),
+                LogMaskingUtil.mask("username", modifiedBy));
         CustomerConversionResponse response = contactInquiryService.convertToCustomer(id, request, modifiedBy);
         log.info("Customer conversion completed. enquiryId={}, customerId={}, status={}", id, response.customerId(), response.status());
         return ResponseEntity.ok(response);

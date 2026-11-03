@@ -146,8 +146,7 @@
 
                     <tr>
                         <td class="t-label">SGST
-                            <span th:if="${bill.sgstPercentage != null}"
-                                  th:text="${bill.sgstPercentage + '%'}"></span>
+                            <span th:text="${halfGstRateLabel}"></span>
                         </td>
                         <td class="t-value"
                             th:text="${sgstAmount != null ? #numbers.formatDecimal(sgstAmount, 1, 'COMMA', 2, 'POINT') : '0.00'}">
@@ -157,8 +156,7 @@
 
                     <tr>
                         <td class="t-label">CGST
-                            <span th:if="${bill.cgstPercentage != null}"
-                                  th:text="${bill.cgstPercentage + '%'}"></span>
+                            <span th:text="${halfGstRateLabel}"></span>
                         </td>
                         <td class="t-value"
                             th:text="${cgstAmount != null ? #numbers.formatDecimal(cgstAmount, 1, 'COMMA', 2, 'POINT') : '0.00'}">

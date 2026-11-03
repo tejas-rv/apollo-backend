@@ -71,6 +71,7 @@ dependencies {
     // Swagger
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
     implementation("com.openhtmltopdf:openhtmltopdf-pdfbox:1.0.10")
+    implementation("org.apache.poi:poi-ooxml:5.4.1")
 
     // Thymeleaf (standalone template engine for PDF rendering)
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")

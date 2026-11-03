@@ -1,5 +1,6 @@
 package com.apollo.elevator.quotation.controller;
 
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import com.apollo.elevator.common.api.ApiErrorResponse;
 import com.apollo.elevator.quotation.model.dto.CreateQuotationRequest;
 import com.apollo.elevator.quotation.model.dto.QuotationPendingResponse;
@@ -52,7 +53,8 @@ public class QuotationController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        log.info("Admin quotation list requested. status={}, enquiryStatus={}, query={}, page={}, size={}", status, enquiryStatus, query, page, size);
+        log.info("Admin quotation list requested. status={}, enquiryStatus={}, query={}, page={}, size={}",
+                status, enquiryStatus, LogMaskingUtil.mask("query", query), page, size);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<QuotationResponse> response = quotationService.list(status, enquiryStatus, query, pageable);
         log.info("Admin quotation list completed. totalElements={}", response.getTotalElements());
@@ -87,9 +89,11 @@ public class QuotationController {
             Authentication authentication
     ) {
         String createdBy = authentication != null ? authentication.getName() : "system";
-        log.info("Admin quotation create requested. enquiryId={}, amount={}, createdBy={}", request.enquiryId(), request.amount(), createdBy);
+        log.info("Admin quotation create requested. enquiryId={}, amount={}, createdBy={}",
+                request.enquiryId(), request.amount(), LogMaskingUtil.mask("username", createdBy));
         QuotationResponse response = quotationService.create(request, createdBy);
-        log.info("Admin quotation created. quotationId={}, quotationNumber={}, createdBy={}", response.id(), response.quotationNumber(), createdBy);
+        log.info("Admin quotation created. quotationId={}, quotationNumber={}, createdBy={}",
+                response.id(), response.quotationNumber(), LogMaskingUtil.mask("username", createdBy));
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -109,7 +113,8 @@ public class QuotationController {
             Authentication authentication
     ) {
         String updatedBy = authentication != null ? authentication.getName() : "system";
-        log.info("Admin quotation status update requested. quotationId={}, status={}, updatedBy={}", id, request.status(), updatedBy);
+        log.info("Admin quotation status update requested. quotationId={}, status={}, updatedBy={}",
+                id, request.status(), LogMaskingUtil.mask("username", updatedBy));
         QuotationResponse response = quotationService.updateStatus(id, request.status(), updatedBy);
         log.info("Admin quotation status update completed. quotationId={}, status={}", id, response.status());
         return ResponseEntity.ok(response);

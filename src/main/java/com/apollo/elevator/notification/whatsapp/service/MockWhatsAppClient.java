@@ -1,5 +1,6 @@
 package com.apollo.elevator.notification.whatsapp.service;
 
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -20,7 +21,12 @@ public class MockWhatsAppClient implements WhatsAppClient {
     @Override
     public WhatsAppDeliveryResult sendText(String phoneNumber, String message) {
         String mockMessageId = "mock-" + UUID.randomUUID();
-        log.info("[MOCK WHATSAPP] ➜ To: {} | Message: {} | MockId: {}", phoneNumber, message, mockMessageId);
+        log.info(
+                "[MOCK WHATSAPP] ➜ To: {} | Message: {} | MockId: {}",
+                LogMaskingUtil.mask("phoneNumber", phoneNumber),
+                LogMaskingUtil.mask("message", message),
+                mockMessageId
+        );
         return new WhatsAppDeliveryResult(mockMessageId);
     }
 
@@ -34,10 +40,10 @@ public class MockWhatsAppClient implements WhatsAppClient {
         String mockMessageId = "mock-doc-" + UUID.randomUUID();
         log.info(
                 "[MOCK WHATSAPP DOC] ➜ To: {} | File: {} | Size: {} bytes | Caption: {} | MockId: {}",
-                phoneNumber,
-                fileName,
+                LogMaskingUtil.mask("phoneNumber", phoneNumber),
+                LogMaskingUtil.mask("fileName", fileName),
                 content == null ? 0 : content.length,
-                caption,
+                LogMaskingUtil.mask("caption", caption),
                 mockMessageId
         );
         return new WhatsAppDeliveryResult(mockMessageId);

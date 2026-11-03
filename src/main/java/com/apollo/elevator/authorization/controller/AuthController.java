@@ -1,6 +1,7 @@
 package com.apollo.elevator.authorization.controller;
 
 import com.apollo.elevator.common.api.ApiErrorResponse;
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import com.apollo.elevator.authorization.service.AuthService;
 import com.apollo.elevator.authorization.model.dto.ChangePasswordRequest;
 import com.apollo.elevator.authorization.model.dto.PasswordResetRequest;
@@ -43,9 +44,10 @@ public class AuthController {
             content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        log.info("Auth login request received. username={}", request.username());
+        log.info("Auth login request received. username={}", LogMaskingUtil.mask("username", request.username()));
         LoginResponse response = authService.login(request);
-        log.info("Auth login completed. username={}, role={}", response.username(), response.role());
+        log.info("Auth login completed. username={}, role={}",
+                LogMaskingUtil.mask("username", response.username()), response.role());
         return ResponseEntity.ok(response);
     }
 
@@ -77,9 +79,10 @@ public class AuthController {
     })
     public ResponseEntity<CurrentUserResponse> me(Authentication authentication) {
         String username = authentication.getName();
-        log.info("Auth me request received. username={}", username);
+        log.info("Auth me request received. username={}", LogMaskingUtil.mask("username", username));
         CurrentUserResponse response = authService.getCurrentUser(username);
-        log.info("Auth me completed. username={}, role={}", response.username(), response.role());
+        log.info("Auth me completed. username={}, role={}",
+                LogMaskingUtil.mask("username", response.username()), response.role());
         return ResponseEntity.ok(response);
     }
 
@@ -97,9 +100,11 @@ public class AuthController {
     })
     public ResponseEntity<String> resetPassword(
             @Valid @RequestBody PasswordResetRequest request) {
-        log.info("Auth reset-password request received. username={}", request.getUsername());
+        log.info("Auth reset-password request received. username={}",
+                LogMaskingUtil.mask("username", request.getUsername()));
         authService.resetPassword(request);
-        log.info("Auth reset-password completed. username={}", request.getUsername());
+        log.info("Auth reset-password completed. username={}",
+                LogMaskingUtil.mask("username", request.getUsername()));
 
         return ResponseEntity.ok("Password reset successfully");
     }
@@ -117,9 +122,9 @@ public class AuthController {
             @Valid @RequestBody ChangePasswordRequest request,
             Authentication authentication) {
         String username = authentication.getName();
-        log.info("Auth change-password request received. username={}", username);
+        log.info("Auth change-password request received. username={}", LogMaskingUtil.mask("username", username));
         authService.changePassword(username, request);
-        log.info("Auth change-password completed. username={}", username);
+        log.info("Auth change-password completed. username={}", LogMaskingUtil.mask("username", username));
 
         return ResponseEntity.ok("Password changed successfully");
     }

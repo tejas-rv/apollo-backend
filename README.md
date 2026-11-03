@@ -26,9 +26,9 @@ and email/WhatsApp notifications.
 
    ```text
    APP_MASTER_KEY=<base64 32-byte key>
-   DB_URL=jdbc:postgresql://localhost:5432/apollo
+   DB_URL=jdbc:postgresql://localhost:5432/apollo-elevator-development
    DB_USERNAME=apollo
-   DB_PASSWORD=apollo
+   DB_PASSWORD=<database password>
    ```
 
    Generate a master key with `openssl rand -base64 32`. The master key is
@@ -45,7 +45,15 @@ and email/WhatsApp notifications.
    application creates the encrypted JWT configuration and a default admin
    user, logging the generated password once.
 
-The API is available at `http://localhost:8080`. OpenAPI documentation is
+### Test customers (development only)
+
+Start with `SEED_TEST_CUSTOMERS=true` to create ten sample customers
+(`TEST-001`..`TEST-010`) covering overdue/today/upcoming/cancelled/completed
+visits, multiple lifts, expired/pending/cancelled AMCs, unlinked legacy
+engineers and customers without lifts or AMCs. Existing codes are skipped;
+delete them and restart to regenerate with fresh dates.
+
+The API is available at `http://localhost:9071` by default. OpenAPI documentation is
 available at `/swagger-ui/index.html`; health is available at
 `/actuator/health`.
 
@@ -72,6 +80,11 @@ GOOGLE_DRIVE_OAUTH_CLIENT_PATH=C:\path\outside\the\repository\apollo-elevator-oa
 GOOGLE_DRIVE_TOKEN_DIRECTORY=C:\path\outside\the\repository\google-drive-tokens
 GOOGLE_DRIVE_FOLDER_ID=<Apollo Elevator Data folder ID>
 ```
+
+Email, WhatsApp, and Google Drive are disabled unless explicitly enabled.
+Database connectivity uses the standard Spring datasource properties and does
+not silently switch to a different database when the configured database is
+unavailable.
 
 Google Drive integration uses OAuth 2.0 user authorization (installed-app
 flow), not a service account. On first startup, a browser window opens for
@@ -106,6 +119,20 @@ Admin and engineer endpoints require a JWT in the
 `Authorization: Bearer <token>` header. Admin users can refresh the encrypted
 runtime security configuration with
 `POST /api/admin/security/config/refresh`.
+
+### Customer data import modes
+
+`POST /api/admin/customers/data/import?mode=MERGE|OVERRIDE` (default `MERGE`).
+Exports include a `visitId` column in `service_history`; edited visits are
+matched by it, so always edit a fresh export.
+
+- `MERGE` adds and updates rows; nothing is deleted.
+- `OVERRIDE` first saves a full export to Google Drive as
+  `<importedFileName>_<yyyyMMdd_HHmmss>_<username>.xlsx` (IST; aborted if the
+  backup fails, rejected with 409 when Drive is disabled), then replaces the
+  representatives and the service visits of each AMC contract in the file.
+  Customers, lifts and AMC contracts are never deleted, and COMPLETED visits are
+  kept when the file was exported with `includeCompleted=false`.
 
 ## Project layout
 

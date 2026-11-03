@@ -36,6 +36,10 @@ public class ServiceHistory {
     @Column(name = "engineer_name", nullable = false, length = 100)
     private String engineerName;
 
+    /** Engineer account the visit is assigned to; engineerName is the display snapshot. */
+    @Column(name = "assigned_engineer_id")
+    private Long assignedEngineerId;
+
     @Column(name = "work_done", nullable = false, length = 500)
     private String workDone;
 

@@ -1,6 +1,8 @@
 package com.apollo.elevator.customer.model.dto;
 
 import com.apollo.elevator.customer.model.enums.ServiceVisitStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -21,7 +23,9 @@ public class ServiceHistoryDetails {
     @NotNull(message = "Service date is required")
     private LocalDate serviceDate;
 
-    @NotBlank(message = "Engineer name is required")
+    /** Engineer account assigned to the visit. When set, engineerName is filled from the account. */
+    private Long assignedEngineerId;
+
     @Size(max = 100, message = "Engineer name must not exceed 100 characters")
     private String engineerName;
 
@@ -31,4 +35,10 @@ public class ServiceHistoryDetails {
 
     @NotNull(message = "Service visit status is required")
     private ServiceVisitStatus status;
+
+    @JsonIgnore
+    @AssertTrue(message = "Engineer is required")
+    public boolean isEngineerSpecified() {
+        return assignedEngineerId != null || (engineerName != null && !engineerName.isBlank());
+    }
 }

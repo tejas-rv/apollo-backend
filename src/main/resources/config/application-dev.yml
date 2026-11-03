@@ -4,12 +4,9 @@ app:
     phone-number-id: mock-phone-id
     access-token: mock-token
   email:
-    enabled: true
-    from: tejas.rv@outlook.com
-    admin-recipients:
-      - admin1@apolloelevator.in
-      - admin2@apolloelevator.in
-      - admin3@apolloelevator.in
+    enabled: false
+    from: ""
+    admin-recipients: []
 
 logging:
   level:

@@ -69,6 +69,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").authenticated()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/engineer/**").hasAnyRole("ADMIN", "ENGINEER")
+                        .requestMatchers("/api/google-drive/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
             .authenticationProvider(authenticationProvider())

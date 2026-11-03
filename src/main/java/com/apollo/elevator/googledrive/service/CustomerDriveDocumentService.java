@@ -78,7 +78,8 @@ public class CustomerDriveDocumentService {
         try {
             result = documentService.generateAmcContractPdfResult(customerId);
         } catch (ResourceNotFoundException | IllegalArgumentException exception) {
-            log.warn("Skipping AMC contract generation for customerId={}: {}", customerId, exception.getMessage());
+            log.warn("Skipping AMC contract generation for customerId={}, errorType={}",
+                    customerId, exception.getClass().getSimpleName());
             return null;
         }
         return googleDriveService.uploadGeneratedFile(
@@ -97,7 +98,8 @@ public class CustomerDriveDocumentService {
             BillPreviewResponse preview = documentService.buildBillPreview(customerId, DocumentType.GST_BILL);
             result = documentService.generateBillPdf(DocumentType.GST_BILL, preview.billRequest());
         } catch (ResourceNotFoundException | IllegalArgumentException exception) {
-            log.warn("Skipping bill generation for customerId={}: {}", customerId, exception.getMessage());
+            log.warn("Skipping bill generation for customerId={}, errorType={}",
+                    customerId, exception.getClass().getSimpleName());
             return null;
         }
         return googleDriveService.uploadGeneratedFile(
@@ -193,4 +195,3 @@ public class CustomerDriveDocumentService {
         return uploaded;
     }
 }
-

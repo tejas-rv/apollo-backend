@@ -1,6 +1,7 @@
 package com.apollo.elevator.authorization.model.entity;
 
 import com.apollo.elevator.authorization.model.enums.Role;
+import com.apollo.elevator.authorization.model.enums.UserType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,6 +31,10 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "user_type", length = 20)
+    private UserType userType;
+
     private String email;
 
     private String whatsapp;
@@ -37,4 +42,8 @@ public class User {
     @Column(nullable = false)
     @Builder.Default
     private boolean enabled = true;
+
+    public UserType resolvedUserType() {
+        return userType != null ? userType : (role == null ? null : UserType.fromRole(role));
+    }
 }

@@ -12,6 +12,10 @@ public interface CustomerRepository
 
     boolean existsByCustomerCode(String customerCode);
 
+    boolean existsByCustomerNameAndMobileNumber(String customerName, String mobileNumber);
+
+    java.util.Optional<Customer> findByCustomerCode(String customerCode);
+
     @Query("""
             SELECT c
             FROM Customer c

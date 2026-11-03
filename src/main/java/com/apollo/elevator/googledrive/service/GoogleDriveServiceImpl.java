@@ -1,5 +1,6 @@
 package com.apollo.elevator.googledrive.service;
 
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import com.apollo.elevator.common.exception.ResourceNotFoundException;
 import com.apollo.elevator.customer.model.entity.Customer;
 import com.apollo.elevator.customer.model.entity.Lift;
@@ -334,6 +335,38 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
                 .toList();
     }
 
+    @Override
+    public Optional<DriveFileMetadata> findFileInRootFolder(String fileName) {
+        if (!StringUtils.hasText(fileName)) {
+            throw new IllegalArgumentException("File name is required");
+        }
+        return findFileInFolder(properties.getFolderId(), fileName).map(this::toMetadata);
+    }
+
+    @Override
+    public DriveFileMetadata uploadFileToRootFolder(String fileName, String contentType, byte[] content) {
+        if (!StringUtils.hasText(fileName)) {
+            throw new IllegalArgumentException("File name is required");
+        }
+        if (content == null || content.length == 0) {
+            throw new IllegalArgumentException("File content must not be empty");
+        }
+
+        try (InputStream inputStream = new ByteArrayInputStream(content)) {
+            return uploadOrOverwrite(
+                    null,
+                    null,
+                    properties.getFolderId(),
+                    fileName,
+                    StringUtils.hasText(contentType) ? contentType : "application/octet-stream",
+                    inputStream,
+                    content.length
+            );
+        } catch (IOException exception) {
+            throw translateException("upload file", exception);
+        }
+    }
+
     private Lift findLift(Customer customer, Long liftId) {
         if (liftId == null) {
             throw new IllegalArgumentException("Lift ID is required");
@@ -392,7 +425,7 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
                         .setFields(FILE_FIELDS)
                         .execute();
                 log.info("Google Drive folder created. folderId={}, folderName={}",
-                        folder.getId(), folderName);
+                        folder.getId(), LogMaskingUtil.mask("folderName", folderName));
                 return folder;
             } catch (IOException exception) {
                 throw translateException("create folder", exception);
@@ -597,7 +630,7 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
                                     + "folder is shared as Editor. Move the target folder into a Shared Drive "
                                     + "(Team Drive) with the service account added as a member, or use domain-wide "
                                     + "delegation to impersonate a real user. operation={}, googleMessage={}",
-                            operation, googleMessage
+                            operation, LogMaskingUtil.mask("errorMessage", googleMessage)
                     );
                     return new GoogleDrivePermissionException(
                             "Google Drive rejected the request: storageQuotaExceeded. Service accounts have no "
@@ -606,7 +639,9 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
                 }
                 log.error(
                         "Google Drive permission denied. operation={}, reason={}, googleMessage={}",
-                        operation, reason, googleMessage
+                        operation,
+                        LogMaskingUtil.mask("reason", reason),
+                        LogMaskingUtil.mask("errorMessage", googleMessage)
                 );
                 return new GoogleDrivePermissionException(
                         "The service account does not have permission to " + operation
@@ -617,7 +652,10 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
             }
             log.error(
                     "Google Drive API error. operation={}, statusCode={}, reason={}, googleMessage={}",
-                    operation, statusCode, reason, googleMessage
+                    operation,
+                    statusCode,
+                    LogMaskingUtil.mask("reason", reason),
+                    LogMaskingUtil.mask("errorMessage", googleMessage)
             );
         }
         return new GoogleDriveOperationException(

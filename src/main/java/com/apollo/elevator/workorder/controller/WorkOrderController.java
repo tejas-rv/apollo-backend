@@ -1,5 +1,6 @@
 package com.apollo.elevator.workorder.controller;
 
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import com.apollo.elevator.workorder.model.dto.WorkOrderResponse;
 import com.apollo.elevator.workorder.service.WorkOrderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,7 +34,8 @@ public class WorkOrderController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        log.info("Work order list requested. query={}, status={}, page={}, size={}", query, status, page, size);
+        log.info("Work order list requested. query={}, status={}, page={}, size={}",
+                LogMaskingUtil.mask("query", query), status, page, size);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return ResponseEntity.ok(workOrderService.list(query, status, pageable));
     }

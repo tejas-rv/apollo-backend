@@ -3,16 +3,15 @@ package com.apollo.elevator.authorization.service;
 import com.apollo.elevator.common.exception.ConflictException;
 import com.apollo.elevator.common.exception.ResourceNotFoundException;
 import com.apollo.elevator.common.exception.UnauthorizedException;
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import com.apollo.elevator.authorization.model.dto.ChangePasswordRequest;
-import com.apollo.elevator.authorization.model.dto.CreateEngineerRequest;
 import com.apollo.elevator.authorization.model.dto.PasswordResetRequest;
 import com.apollo.elevator.authorization.model.dto.CurrentUserResponse;
-import com.apollo.elevator.authorization.model.dto.EngineerUserResponse;
 import com.apollo.elevator.authorization.model.dto.LoginRequest;
 import com.apollo.elevator.authorization.model.dto.LoginResponse;
 import com.apollo.elevator.authorization.model.dto.RefreshTokenRequest;
 import com.apollo.elevator.authorization.model.dto.RefreshTokenResponse;
-import com.apollo.elevator.authorization.model.enums.Role;
+import com.apollo.elevator.authorization.model.enums.UserType;
 import com.apollo.elevator.authorization.repository.UserRepository;
 import com.apollo.elevator.securityconfiguration.service.JwtService;
 import com.apollo.elevator.securityconfiguration.service.SecurityConfigService;
@@ -42,13 +41,14 @@ public class AuthService {
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
-        log.info("Processing login. username={}", request.username());
+        log.info("Processing login. username={}", LogMaskingUtil.mask("username", request.username()));
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.username(), request.password())
             );
         } catch (BadCredentialsException exception) {
-            log.warn("Login failed due to bad credentials. username={}", request.username());
+            log.warn("Login failed due to bad credentials. username={}",
+                    LogMaskingUtil.mask("username", request.username()));
             throw new UnauthorizedException("Invalid username or password");
         }
 
@@ -58,7 +58,7 @@ public class AuthService {
         log.info(
                 "Login successful. userId={}, username={}, role={}, refreshTokenExpiry={}",
                 user.getId(),
-                user.getUsername(),
+                LogMaskingUtil.mask("username", user.getUsername()),
                 user.getRole().name(),
                 refreshToken.expiresAt()
         );
@@ -96,14 +96,16 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public CurrentUserResponse getCurrentUser(String username) {
-        log.info("Fetching current user profile. username={}", username);
+        log.info("Fetching current user profile. username={}", LogMaskingUtil.mask("username", username));
         User user = findUserByUsername(username);
-        log.info("Current user profile fetched. userId={}, username={}, role={}", user.getId(), user.getUsername(), user.getRole().name());
+        log.info("Current user profile fetched. userId={}, username={}, role={}",
+                user.getId(), LogMaskingUtil.mask("username", user.getUsername()), user.getRole().name());
 
         return new CurrentUserResponse(
                 user.getId(),
                 user.getUsername(),
                 user.getRole().name(),
+                user.resolvedUserType() == null ? null : user.resolvedUserType().name(),
                 user.getEmail(),
                 user.getWhatsapp(),
                 user.isEnabled()
@@ -112,31 +114,36 @@ public class AuthService {
 
     @Transactional
     public void resetPassword(PasswordResetRequest request) {
-        log.info("Reset password started. username={}", request.getUsername());
+        log.info("Reset password started. username={}", LogMaskingUtil.mask("username", request.getUsername()));
         User user = findUserByUsername(request.getUsername());
-        log.info("Revoking active refresh tokens before password reset. userId={}, username={}", user.getId(), user.getUsername());
+        log.info("Revoking active refresh tokens before password reset. userId={}, username={}",
+                user.getId(), LogMaskingUtil.mask("username", user.getUsername()));
         refreshTokenService.revokeAllActiveTokens(user);
         passwordResetService.resetPassword(request.getUsername(), request.getNewPassword());
-        log.info("Password reset completed. userId={}, username={}", user.getId(), user.getUsername());
+        log.info("Password reset completed. userId={}, username={}",
+                user.getId(), LogMaskingUtil.mask("username", user.getUsername()));
     }
 
     @Transactional
     public void changePassword(String username, ChangePasswordRequest request) {
-        log.info("Change password started. username={}", username);
+        log.info("Change password started. username={}", LogMaskingUtil.mask("username", username));
         User user = findUserByUsername(username);
         if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
-            log.warn("Change password failed due to incorrect current password. username={}", username);
+            log.warn("Change password failed due to incorrect current password. username={}",
+                    LogMaskingUtil.mask("username", username));
             throw new UnauthorizedException("Current password is incorrect");
         }
         refreshTokenService.revokeAllActiveTokens(user);
         passwordResetService.resetPassword(username, request.newPassword());
-        log.info("Change password completed. userId={}, username={}", user.getId(), user.getUsername());
+        log.info("Change password completed. userId={}, username={}",
+                user.getId(), LogMaskingUtil.mask("username", user.getUsername()));
     }
 
+    /** Creates the staff login only; profile data is owned by UserManagementService. */
     @Transactional
-    public EngineerUserResponse createEngineer(CreateEngineerRequest request) {
-        String username = request.username() == null ? "" : request.username().trim();
-        String password = request.password() == null ? "" : request.password();
+    public User createAccount(String rawUsername, String rawPassword, UserType userType) {
+        String username = rawUsername == null ? "" : rawUsername.trim();
+        String password = rawPassword == null ? "" : rawPassword;
 
         if (username.isBlank()) {
             throw new IllegalArgumentException("username is required");
@@ -144,28 +151,34 @@ public class AuthService {
         if (password.isBlank()) {
             throw new IllegalArgumentException("password is required");
         }
+        if (userType == null) {
+            throw new IllegalArgumentException("userType is required");
+        }
         if (userRepository.existsByUsername(username)) {
-            log.warn("Engineer creation failed due to duplicate username. username={}", username);
+            log.warn("User creation failed due to duplicate username. username={}",
+                    LogMaskingUtil.mask("username", username));
             throw new ConflictException("Username already exists: " + username);
         }
 
-        User engineer = User.builder()
+        User user = User.builder()
                 .username(username)
                 .password(passwordEncoder.encode(password))
-                .role(Role.ENGINEER)
+                .role(userType.securityRole())
+                .userType(userType)
                 .enabled(true)
                 .build();
 
-        User savedEngineer = userRepository.save(engineer);
-        log.info("Engineer created. userId={}, username={}, role={}", savedEngineer.getId(), savedEngineer.getUsername(), savedEngineer.getRole().name());
+        User saved = userRepository.save(user);
+        log.info("User created. userId={}, username={}, userType={}, role={}",
+                saved.getId(), LogMaskingUtil.mask("username", saved.getUsername()), userType, saved.getRole().name());
 
-        return new EngineerUserResponse(savedEngineer.getId(), savedEngineer.getUsername(), savedEngineer.getRole().name());
+        return saved;
     }
 
     private User findUserByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> {
-                    log.warn("User not found. username={}", username);
+                    log.warn("User not found. username={}", LogMaskingUtil.mask("username", username));
                     return new ResourceNotFoundException("User not found: " + username);
                 });
     }

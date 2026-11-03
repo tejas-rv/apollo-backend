@@ -5,6 +5,7 @@ import com.apollo.elevator.googledrive.model.dto.DriveDownload;
 import com.apollo.elevator.googledrive.model.dto.DriveFileMetadata;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface GoogleDriveService {
@@ -53,4 +54,15 @@ public interface GoogleDriveService {
      * folder (filtered by the {@code Lift_<liftId>_} filename prefix).
      */
     List<DriveFileMetadata> listLiftImages(Long customerId, Long liftId);
+
+    /**
+     * Finds a (non-folder) file directly inside the configured root Drive folder by exact name.
+     */
+    Optional<DriveFileMetadata> findFileInRootFolder(String fileName);
+
+    /**
+     * Uploads a file directly into the configured root Drive folder, overwriting an existing
+     * file with the same name in place (preserving its file ID).
+     */
+    DriveFileMetadata uploadFileToRootFolder(String fileName, String contentType, byte[] content);
 }

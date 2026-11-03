@@ -2,6 +2,7 @@ package com.apollo.elevator.customer.service;
 
 import com.apollo.elevator.common.exception.ConflictException;
 import com.apollo.elevator.common.exception.ResourceNotFoundException;
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import com.apollo.elevator.customer.model.entity.AmcContract;
 import com.apollo.elevator.customer.model.entity.ClientRepresentative;
 import com.apollo.elevator.customer.model.entity.Customer;
@@ -19,11 +20,13 @@ import com.apollo.elevator.customer.model.dto.UpsDetails;
 import com.apollo.elevator.customer.model.enums.ServiceVisitStatus;
 import com.apollo.elevator.customer.repository.AmcContractRepository;
 import com.apollo.elevator.customer.repository.CustomerRepository;
+import com.apollo.elevator.engineer.service.EngineerDirectory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -40,6 +43,7 @@ public class CustomerService {
 
     private final CustomerRepository customerRepository;
     private final AmcContractRepository amcContractRepository;
+    private final EngineerDirectory engineerDirectory;
 
     /**
      * Create a new customer.
@@ -50,30 +54,23 @@ public class CustomerService {
         log.info(
             "Creating customer. customerCode={}, customerName={}, liftCount={}",
             request.getCustomerCode(),
-            request.getCustomerName(),
+            LogMaskingUtil.mask("customerName", request.getCustomerName()),
             liftCount
         );
         logLiftPayload("Create customer payload", request.getLifts());
-
-        if (customerRepository.existsByCustomerCode(
-            request.getCustomerCode())) {
-            log.warn(
-                "Create customer failed due to duplicate customerCode={}",
-                request.getCustomerCode()
-            );
-
-            throw new ConflictException(
-                "Customer code already exists: "
-                    + request.getCustomerCode()
-            );
-        }
 
         Customer customer = new Customer();
 
         mapToEntity(request, customer);
 
+        // The code embeds the database id, so insert with a unique placeholder first.
+        customer.setCustomerCode("TMP-" + UUID.randomUUID());
         Customer savedCustomer =
             customerRepository.save(customer);
+        savedCustomer.setCustomerCode(
+            CustomerCodeGenerator.generate(savedCustomer.getCustomerName(), savedCustomer.getId())
+        );
+        customerRepository.flush();
         log.info(
             "Customer created. customerId={}, customerCode={}",
             savedCustomer.getId(),
@@ -131,7 +128,7 @@ public class CustomerService {
         Pageable pageable) {
         log.info(
             "Searching customers. query='{}', pageNumber={}, pageSize={}",
-            query,
+            LogMaskingUtil.mask("query", query),
             pageable.getPageNumber(),
             pageable.getPageSize()
         );
@@ -146,7 +143,7 @@ public class CustomerService {
             .map(this::mapToDto);
         log.info(
             "Search completed. query='{}', totalElements={}",
-            query,
+            LogMaskingUtil.mask("query", query),
             response.getTotalElements()
         );
         return response;
@@ -212,9 +209,9 @@ public class CustomerService {
             log.info("Customer deleted. customerId={}", id);
         } catch (DataIntegrityViolationException e) {
             log.error(
-                "Delete customer failed due to integrity constraints. customerId={}",
+                "Delete customer failed due to integrity constraints. customerId={}, errorType={}",
                 id,
-                e
+                e.getClass().getSimpleName()
             );
 
             throw new ConflictException(
@@ -732,9 +729,10 @@ public class CustomerService {
             return new ArrayList<>();
         }
 
+        EngineerDirectory.Lookup engineers = engineerDirectory.lookup();
         return serviceHistoryDetailsList.stream()
             .filter(Objects::nonNull)
-            .map(this::mapServiceHistoryEntity)
+            .map(details -> mapServiceHistoryEntity(details, engineers))
             .collect(
                 ArrayList::new,
                 ArrayList::add,
@@ -743,12 +741,25 @@ public class CustomerService {
     }
 
     private ServiceHistory mapServiceHistoryEntity(
-        ServiceHistoryDetails serviceHistoryDetails
+        ServiceHistoryDetails serviceHistoryDetails,
+        EngineerDirectory.Lookup engineers
     ) {
+        Long engineerId = serviceHistoryDetails.getAssignedEngineerId();
+        String engineerName = trimToNull(serviceHistoryDetails.getEngineerName());
+        if (engineerId != null) {
+            if (!engineers.isEngineer(engineerId)) {
+                throw new IllegalArgumentException("Assigned engineer not found: " + engineerId);
+            }
+            engineerName = engineers.displayName(engineerId);
+        } else {
+            engineerId = engineers.resolve(engineerName);
+        }
+
         return ServiceHistory.builder()
             .id(normalizeEntityId(serviceHistoryDetails.getId()))
             .serviceDate(serviceHistoryDetails.getServiceDate())
-            .engineerName(trimToNull(serviceHistoryDetails.getEngineerName()))
+            .engineerName(engineerName)
+            .assignedEngineerId(engineerId)
             .workDone(trimToNull(serviceHistoryDetails.getWorkDone()))
             .status(serviceHistoryDetails.getStatus())
             .build();
@@ -778,6 +789,7 @@ public class CustomerService {
             .id(serviceHistory.getId())
             .serviceDate(serviceHistory.getServiceDate())
             .engineerName(serviceHistory.getEngineerName())
+            .assignedEngineerId(serviceHistory.getAssignedEngineerId())
             .workDone(serviceHistory.getWorkDone())
             .status(serviceHistory.getStatus())
             .build();
@@ -860,7 +872,7 @@ public class CustomerService {
                 lift.getNumberOfFloors(),
                 lift.getCapacityInPersons(),
                 lift.getCapacityInKg(),
-                lift.getSerialNumber(),
+                LogMaskingUtil.mask("serialNumber", lift.getSerialNumber()),
                 amcCount
             );
         }

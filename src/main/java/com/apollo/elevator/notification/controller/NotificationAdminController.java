@@ -1,9 +1,12 @@
 package com.apollo.elevator.notification.controller;
 
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import com.apollo.elevator.common.api.ApiErrorResponse;
 import com.apollo.elevator.notification.email.model.dto.ContractEmailRequest;
 import com.apollo.elevator.notification.whatsapp.model.dto.ContractWhatsAppRequest;
 import com.apollo.elevator.notification.model.dto.NotificationResponse;
+import com.apollo.elevator.notification.model.dto.HtmlToPdfNotificationRequest;
+import com.apollo.elevator.notification.model.dto.HtmlToPdfNotificationResponse;
 import com.apollo.elevator.notification.email.model.dto.PlainEmailRequest;
 import com.apollo.elevator.notification.whatsapp.model.dto.PlainWhatsAppRequest;
 import com.apollo.elevator.notification.service.NotificationService;
@@ -51,7 +54,8 @@ public class NotificationAdminController {
     public ResponseEntity<NotificationResponse> sendPlainEmail(
             @Valid @RequestBody PlainEmailRequest request
     ) {
-        log.info("Plain email request received. email={}, subject={}", request.email(), request.subject());
+        log.info("Plain email request received. email={}, subject={}",
+                LogMaskingUtil.mask("email", request.email()), LogMaskingUtil.mask("subject", request.subject()));
         NotificationResponse response = notificationService.sendPlainEmail(request);
         log.info("Plain email completed. notificationId={}, status={}", response.id(), response.status());
         return ResponseEntity.ok(response);
@@ -78,7 +82,8 @@ public class NotificationAdminController {
     public ResponseEntity<NotificationResponse> sendContractEmail(
             @Valid @RequestBody ContractEmailRequest request
     ) {
-        log.info("Contract email request received. customerId={}, email={}", request.customerId(), request.email());
+        log.info("Contract email request received. customerId={}, email={}",
+                request.customerId(), LogMaskingUtil.mask("email", request.email()));
         NotificationResponse response = notificationService.sendContractEmail(request);
         log.info("Contract email completed. notificationId={}, status={}", response.id(), response.status());
         return ResponseEntity.ok(response);
@@ -104,7 +109,8 @@ public class NotificationAdminController {
     public ResponseEntity<NotificationResponse> sendPlainWhatsApp(
             @Valid @RequestBody PlainWhatsAppRequest request
     ) {
-        log.info("Plain WhatsApp request received. phoneNumber={}", request.phoneNumber());
+        log.info("Plain WhatsApp request received. phoneNumber={}",
+                LogMaskingUtil.mask("phoneNumber", request.phoneNumber()));
         NotificationResponse response = notificationService.sendPlainWhatsApp(request);
         log.info("Plain WhatsApp completed. notificationId={}, status={}", response.id(), response.status());
         return ResponseEntity.ok(response);
@@ -131,9 +137,35 @@ public class NotificationAdminController {
     public ResponseEntity<NotificationResponse> sendContractWhatsApp(
             @Valid @RequestBody ContractWhatsAppRequest request
     ) {
-        log.info("Contract WhatsApp request received. customerId={}, phoneNumber={}", request.customerId(), request.phoneNumber());
+        log.info("Contract WhatsApp request received. customerId={}, phoneNumber={}",
+                request.customerId(), LogMaskingUtil.mask("phoneNumber", request.phoneNumber()));
         NotificationResponse response = notificationService.sendContractWhatsApp(request);
         log.info("Contract WhatsApp completed. notificationId={}, status={}", response.id(), response.status());
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/html-to-pdf")
+    @Operation(
+            summary = "Generate a PDF from HTML and send it",
+            description = "Sanitizes HTML, generates a PDF, and optionally delivers it by email, WhatsApp, or both."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "PDF generated and sent",
+                    content = @Content(schema = @Schema(implementation = HtmlToPdfNotificationResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request or no delivery target",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "Forbidden",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    public ResponseEntity<HtmlToPdfNotificationResponse> sendHtmlAsPdf(
+            @Valid @RequestBody HtmlToPdfNotificationRequest request
+    ) {
+        log.info("HTML-to-PDF notification requested. hasEmail={}, hasWhatsApp={}",
+                request.email() != null && !request.email().isBlank(),
+                request.whatsappPhoneNumber() != null && !request.whatsappPhoneNumber().isBlank());
+        HtmlToPdfNotificationResponse response = notificationService.sendHtmlAsPdfNotification(request);
+        log.info("HTML-to-PDF notification completed. fileName={}, sizeBytes={}",
+                LogMaskingUtil.mask("fileName", response.pdfFileName()), response.pdfSizeBytes());
         return ResponseEntity.ok(response);
     }
 }

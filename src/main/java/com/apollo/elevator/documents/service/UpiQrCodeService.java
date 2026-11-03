@@ -36,6 +36,10 @@ public class UpiQrCodeService {
         if (totalAfterTax == null || totalAfterTax.signum() <= 0) {
             return null;
         }
+        if (vpa == null || vpa.isBlank()) {
+            log.warn("UPI QR skipped: apollo.upi.vpa (UPI_VPA) is not configured. invoiceNumber={}", invoiceNumber);
+            return null;
+        }
         try {
             String upiUri = buildUpiUri(invoiceNumber, totalAfterTax);
 

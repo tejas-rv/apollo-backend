@@ -6,6 +6,7 @@ import com.apollo.elevator.common.exception.NotificationDeliveryException;
 import com.apollo.elevator.common.exception.ResourceNotFoundException;
 import com.apollo.elevator.common.exception.UnauthorizedException;
 import com.apollo.elevator.common.exception.UnsupportedDocumentTypeException;
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import com.apollo.elevator.googledrive.exception.GoogleDriveAuthenticationException;
 import com.apollo.elevator.googledrive.exception.GoogleDriveOperationException;
 import com.apollo.elevator.googledrive.exception.GoogleDrivePermissionException;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.HandlerMapping;
 
 @RestControllerAdvice
 @Slf4j
@@ -36,8 +38,8 @@ public class GlobalExceptionHandler {
     ) {
         log.warn(
             "Validation failed for path={}: {}",
-            request.getRequestURI(),
-            exception.getMessage()
+            route(request),
+            LogMaskingUtil.mask("errorMessage", exception.getMessage())
         );
         Map<String, String> errors = new LinkedHashMap<>();
 
@@ -55,8 +57,8 @@ public class GlobalExceptionHandler {
     ) {
         log.warn(
             "Resource not found for path={}: {}",
-            request.getRequestURI(),
-            exception.getMessage()
+            route(request),
+            LogMaskingUtil.mask("errorMessage", exception.getMessage())
         );
         return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request, Map.of());
     }
@@ -68,8 +70,8 @@ public class GlobalExceptionHandler {
     ) {
         log.warn(
             "Conflict for path={}: {}",
-            request.getRequestURI(),
-            exception.getMessage()
+            route(request),
+            LogMaskingUtil.mask("errorMessage", exception.getMessage())
         );
         return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request, Map.of());
     }
@@ -81,8 +83,8 @@ public class GlobalExceptionHandler {
     ) {
         log.warn(
             "Unsupported document type for path={}: {}",
-            request.getRequestURI(),
-            exception.getMessage()
+            route(request),
+            LogMaskingUtil.mask("errorMessage", exception.getMessage())
         );
         return buildResponse(HttpStatus.BAD_REQUEST, exception.getErrorCode(), exception.getMessage(), request, Map.of());
     }
@@ -95,10 +97,11 @@ public class GlobalExceptionHandler {
         Object value = exception.getValue();
         String rawValue = value == null ? "" : value.toString();
         if ("WITHOUT_GST_BILL".equalsIgnoreCase(rawValue)) {
-            log.warn("Unsupported document type requested for path={}: {}", request.getRequestURI(), rawValue);
+            log.warn("Unsupported document type requested for path={}: {}", route(request), rawValue);
             return buildResponse(HttpStatus.BAD_REQUEST, "UNSUPPORTED_DOCUMENT_TYPE", "Only GST_BILL is supported.", request, Map.of());
         }
-        log.warn("Type mismatch for path={}: {}", request.getRequestURI(), exception.getMessage());
+        log.warn("Type mismatch for path={}: {}", route(request),
+                LogMaskingUtil.mask("errorMessage", exception.getMessage()));
         return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request, Map.of());
     }
 
@@ -109,8 +112,8 @@ public class GlobalExceptionHandler {
     ) {
         log.warn(
             "Invalid GST percentage for path={}: {}",
-            request.getRequestURI(),
-            exception.getMessage()
+            route(request),
+            LogMaskingUtil.mask("errorMessage", exception.getMessage())
         );
         return buildResponse(HttpStatus.BAD_REQUEST, exception.getErrorCode(), exception.getMessage(), request, Map.of());
     }
@@ -122,8 +125,8 @@ public class GlobalExceptionHandler {
     ) {
         log.warn(
             "Bad request for path={}: {}",
-            request.getRequestURI(),
-            exception.getMessage()
+            route(request),
+            LogMaskingUtil.mask("errorMessage", exception.getMessage())
         );
         return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request, Map.of());
     }
@@ -135,8 +138,8 @@ public class GlobalExceptionHandler {
     ) {
         log.warn(
             "Unauthorized for path={}: {}",
-            request.getRequestURI(),
-            exception.getMessage()
+            route(request),
+            LogMaskingUtil.mask("errorMessage", exception.getMessage())
         );
         return buildResponse(HttpStatus.UNAUTHORIZED, exception.getMessage(), request, Map.of());
     }
@@ -148,8 +151,8 @@ public class GlobalExceptionHandler {
     ) {
         log.warn(
             "Access denied for path={}: {}",
-            request.getRequestURI(),
-            exception.getMessage()
+            route(request),
+            LogMaskingUtil.mask("errorMessage", exception.getMessage())
         );
         return buildResponse(HttpStatus.FORBIDDEN, "You are not allowed to access this resource", request, Map.of());
     }
@@ -159,7 +162,7 @@ public class GlobalExceptionHandler {
             GoogleDrivePermissionException exception,
             HttpServletRequest request
     ) {
-        log.warn("Google Drive permission denied for path={}", request.getRequestURI());
+        log.warn("Google Drive permission denied for path={}", route(request));
         return buildResponse(HttpStatus.FORBIDDEN, exception.getMessage(), request, Map.of());
     }
 
@@ -168,7 +171,8 @@ public class GlobalExceptionHandler {
             RuntimeException exception,
             HttpServletRequest request
     ) {
-        log.error("Google Drive operation failed for path={}", request.getRequestURI(), exception);
+        log.error("Google Drive operation failed for path={}, errorType={}",
+                route(request), exception.getClass().getSimpleName());
         return buildResponse(HttpStatus.BAD_GATEWAY, exception.getMessage(), request, Map.of());
     }
 
@@ -179,8 +183,8 @@ public class GlobalExceptionHandler {
     ) {
         log.warn(
             "Illegal state for path={}: {}",
-            request.getRequestURI(),
-            exception.getMessage()
+            route(request),
+            LogMaskingUtil.mask("errorMessage", exception.getMessage())
         );
         return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request, Map.of());
     }
@@ -191,9 +195,9 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         log.error(
-            "Unexpected error for path={}",
-            request.getRequestURI(),
-            exception
+            "Unexpected error for path={}, errorType={}",
+            route(request),
+            exception.getClass().getSimpleName()
         );
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected server error", request, Map.of());
     }
@@ -225,5 +229,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(body);
+    }
+
+    private String route(HttpServletRequest request) {
+        Object route = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+        return route == null ? "<unmatched>" : route.toString();
     }
 }

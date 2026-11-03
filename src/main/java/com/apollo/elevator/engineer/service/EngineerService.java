@@ -1,7 +1,9 @@
 package com.apollo.elevator.engineer.service;
 
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import com.apollo.elevator.authorization.model.entity.User;
 import com.apollo.elevator.authorization.repository.UserRepository;
+import com.apollo.elevator.authorization.service.UserManagementService;
 import com.apollo.elevator.common.exception.ResourceNotFoundException;
 import com.apollo.elevator.customer.model.entity.AmcContract;
 import com.apollo.elevator.customer.model.entity.Customer;
@@ -43,6 +45,7 @@ public class EngineerService {
     private final PdfTemplateService pdfTemplateService;
     private final NotificationService notificationService;
     private final EmailProperties emailProperties;
+    private final UserManagementService userManagementService;
 
     /**
      * Resolves user ID from username (for JWT auth context).
@@ -107,7 +110,7 @@ public class EngineerService {
         ServiceReport report = ServiceReport.builder()
                 .amcContractId(resolvedAmcContractId)
                 .engineerUserId(engineerUserId)
-                .engineerName(engineer.getUsername())
+                .engineerName(userManagementService.displayName(engineer))
                 .customerId(customer.getId())
                 .customerName(customer.getCustomerName())
                 .visitDate(req.visitDate() != null ? req.visitDate() : LocalDate.now())
@@ -119,6 +122,11 @@ public class EngineerService {
 
         ServiceReport saved = reportRepository.save(report);
         log.info("Service report submitted. reportId={}, engineerId={}, customerId={}", saved.getId(), engineerUserId, req.customerId());
+        Long savedReportId = saved.getId();
+        ServiceVisitCompletion.complete(customer, saved, userManagementService.visitMatchNames(engineer))
+                .ifPresent(visit -> log.info("AMC visit marked completed. reportId={}, amcContractId={}",
+                        savedReportId, report.getAmcContractId()));
+        customerRepository.save(customer);
 
         // Generate PDF and email admin
         try {
@@ -129,7 +137,8 @@ public class EngineerService {
             saved = reportRepository.save(saved);
             log.info("Service report PDF emailed to admin. reportId={}", saved.getId());
         } catch (Exception ex) {
-            log.error("Failed to send service report PDF to admin. reportId={}", saved.getId(), ex);
+            log.error("Failed to send service report PDF to admin. reportId={}, errorType={}",
+                    saved.getId(), ex.getClass().getSimpleName());
             // Report is still saved as SUBMITTED even if email fails
         }
 
@@ -161,11 +170,21 @@ public class EngineerService {
         long totalSubmitted = reportRepository.countByEngineerUserIdAndStatus(engineerUserId, ReportStatus.SUBMITTED)
                 + reportRepository.countByEngineerUserIdAndStatus(engineerUserId, ReportStatus.PDF_SENT);
 
+        List<EngineerScheduledVisit> upcoming = new java.util.ArrayList<>();
+        List<EngineerScheduledVisit> overdue = new java.util.ArrayList<>();
+        for (EngineerScheduledVisit visit : userManagementService.scheduledVisitsFor(engineerUserId)) {
+            (visit.serviceDate() != null && visit.serviceDate().isBefore(today) ? overdue : upcoming).add(visit);
+        }
+
         Map<String, Object> dash = new LinkedHashMap<>();
         dash.put("servicesToday", todayReports.size());
         dash.put("servicesThisMonth", monthReports.size());
         dash.put("totalSubmitted", totalSubmitted);
-        dash.put("recentReports", monthReports.stream().limit(5).map(this::toResponse).collect(Collectors.toList()));
+        dash.put("upcomingServices", upcoming);
+        dash.put("overdueServices", overdue);
+        dash.put("recentReports", reportRepository
+                .findByEngineerUserIdOrderByVisitDateDesc(engineerUserId, org.springframework.data.domain.PageRequest.of(0, 5))
+                .map(this::toResponse).getContent());
         return dash;
     }
 
@@ -268,9 +287,11 @@ public class EngineerService {
                         List.of(new EmailMessageRequest.EmailAttachmentRequest(fileName, "application/pdf", base64))
                 );
                 notificationService.sendEmailMessage(emailReq);
-                log.info("Service report emailed to admin. adminEmail={}, reportId={}", adminEmail, report.getId());
+                log.info("Service report emailed to admin. adminEmail={}, reportId={}",
+                        LogMaskingUtil.mask("email", adminEmail), report.getId());
             } catch (Exception ex) {
-                log.error("Failed to email report to admin. adminEmail={}, reportId={}", adminEmail, report.getId(), ex);
+                log.error("Failed to email report to admin. adminEmail={}, reportId={}, errorType={}",
+                        LogMaskingUtil.mask("email", adminEmail), report.getId(), ex.getClass().getSimpleName());
             }
         }
     }

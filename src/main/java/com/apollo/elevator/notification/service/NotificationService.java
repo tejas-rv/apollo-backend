@@ -1,5 +1,6 @@
 package com.apollo.elevator.notification.service;
 
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import com.apollo.elevator.common.exception.NotificationDeliveryException;
 import com.apollo.elevator.documents.service.HtmlToPdfService;
 import com.apollo.elevator.documents.service.PdfTemplateService;
@@ -99,11 +100,10 @@ public class NotificationService {
             notificationLog.setFailureReason(exception.getMessage());
             notificationLogRepository.save(notificationLog);
             log.error(
-                    "WhatsApp delivery failed. notificationId={}, recipient={}, reason={}",
+                    "WhatsApp delivery failed. notificationId={}, recipient={}, errorType={}",
                     notificationLog.getId(),
-                    notificationLog.getRecipient(),
-                    exception.getMessage(),
-                    exception
+                    LogMaskingUtil.mask("recipient", notificationLog.getRecipient()),
+                    exception.getClass().getSimpleName()
             );
             throw exception;
         }
@@ -164,11 +164,10 @@ public class NotificationService {
             notificationLog.setFailureReason(exception.getMessage());
             notificationLogRepository.save(notificationLog);
             log.error(
-                    "Email delivery failed. notificationId={}, recipient={}, reason={}",
+                    "Email delivery failed. notificationId={}, recipient={}, errorType={}",
                     notificationLog.getId(),
-                    notificationLog.getRecipient(),
-                    exception.getMessage(),
-                    exception
+                    LogMaskingUtil.mask("email", notificationLog.getRecipient()),
+                    exception.getClass().getSimpleName()
             );
             throw exception;
         }
@@ -325,7 +324,8 @@ public class NotificationService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public NotificationResponse sendPlainEmail(PlainEmailRequest request) {
-        log.info("Plain email request. email={}, subject={}", request.email(), request.subject());
+        log.info("Plain email request. email={}, subject={}",
+                LogMaskingUtil.mask("email", request.email()), LogMaskingUtil.mask("subject", request.subject()));
         NotificationLog notificationLog = NotificationLog.builder()
                 .channel(NotificationChannel.EMAIL)
                 .recipient(request.email().trim().toLowerCase())
@@ -351,14 +351,16 @@ public class NotificationService {
             notificationLog.setStatus(NotificationStatus.FAILED);
             notificationLog.setFailureReason(exception.getMessage());
             notificationLogRepository.save(notificationLog);
-            log.error("Plain email failed. notificationId={}, reason={}", notificationLog.getId(), exception.getMessage(), exception);
+            log.error("Plain email failed. notificationId={}, errorType={}",
+                    notificationLog.getId(), exception.getClass().getSimpleName());
             throw exception;
         }
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public NotificationResponse sendContractEmail(ContractEmailRequest request) {
-        log.info("Contract email request. customerId={}, email={}", request.customerId(), request.email());
+        log.info("Contract email request. customerId={}, email={}",
+                request.customerId(), LogMaskingUtil.mask("email", request.email()));
         DocumentService.AmcContractPdfResult pdf = documentService.generateAmcContractPdfResult(request.customerId());
 
         String subject = (request.subject() != null && !request.subject().isBlank())
@@ -388,13 +390,14 @@ public class NotificationService {
             notificationLog.setSentAt(Instant.now());
             notificationLogRepository.save(notificationLog);
             log.info("Contract email sent. notificationId={}, fileName={}, sizeBytes={}",
-                    notificationLog.getId(), pdf.fileName(), pdf.pdfBytes().length);
+                    notificationLog.getId(), LogMaskingUtil.mask("fileName", pdf.fileName()), pdf.pdfBytes().length);
             return toResponse(notificationLog);
         } catch (NotificationDeliveryException exception) {
             notificationLog.setStatus(NotificationStatus.FAILED);
             notificationLog.setFailureReason(exception.getMessage());
             notificationLogRepository.save(notificationLog);
-            log.error("Contract email failed. notificationId={}, reason={}", notificationLog.getId(), exception.getMessage(), exception);
+            log.error("Contract email failed. notificationId={}, errorType={}",
+                    notificationLog.getId(), exception.getClass().getSimpleName());
             throw exception;
         }
     }
@@ -402,7 +405,7 @@ public class NotificationService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public NotificationResponse sendPlainWhatsApp(PlainWhatsAppRequest request) {
         String recipient = normalizePhoneNumber(request.phoneNumber());
-        log.info("Plain WhatsApp request. recipient={}", recipient);
+        log.info("Plain WhatsApp request. recipient={}", LogMaskingUtil.mask("recipient", recipient));
         NotificationLog notificationLog = NotificationLog.builder()
                 .channel(NotificationChannel.WHATSAPP)
                 .recipient(recipient)
@@ -424,7 +427,8 @@ public class NotificationService {
             notificationLog.setStatus(NotificationStatus.FAILED);
             notificationLog.setFailureReason(exception.getMessage());
             notificationLogRepository.save(notificationLog);
-            log.error("Plain WhatsApp failed. notificationId={}, reason={}", notificationLog.getId(), exception.getMessage(), exception);
+            log.error("Plain WhatsApp failed. notificationId={}, errorType={}",
+                    notificationLog.getId(), exception.getClass().getSimpleName());
             throw exception;
         }
     }
@@ -432,7 +436,8 @@ public class NotificationService {
     @Transactional
     public NotificationResponse sendContractWhatsApp(ContractWhatsAppRequest request) {
         String recipient = normalizePhoneNumber(request.phoneNumber());
-        log.info("Contract WhatsApp request. customerId={}, recipient={}", request.customerId(), recipient);
+        log.info("Contract WhatsApp request. customerId={}, recipient={}",
+                request.customerId(), LogMaskingUtil.mask("recipient", recipient));
         DocumentService.AmcContractPdfResult pdf = documentService.generateAmcContractPdfResult(request.customerId());
 
         String caption = (request.caption() != null && !request.caption().isBlank())
@@ -454,13 +459,15 @@ public class NotificationService {
             notificationLog.setProviderMessageId(result.providerMessageId());
             notificationLog.setSentAt(Instant.now());
             notificationLogRepository.save(notificationLog);
-            log.info("Contract WhatsApp sent. notificationId={}, fileName={}", notificationLog.getId(), pdf.fileName());
+            log.info("Contract WhatsApp sent. notificationId={}, fileName={}",
+                    notificationLog.getId(), LogMaskingUtil.mask("fileName", pdf.fileName()));
             return toResponse(notificationLog);
         } catch (NotificationDeliveryException exception) {
             notificationLog.setStatus(NotificationStatus.FAILED);
             notificationLog.setFailureReason(exception.getMessage());
             notificationLogRepository.save(notificationLog);
-            log.error("Contract WhatsApp failed. notificationId={}, reason={}", notificationLog.getId(), exception.getMessage(), exception);
+            log.error("Contract WhatsApp failed. notificationId={}, errorType={}",
+                    notificationLog.getId(), exception.getClass().getSimpleName());
             throw exception;
         }
     }
@@ -480,12 +487,17 @@ public class NotificationService {
 
     private String normalizePhoneNumber(String phoneNumber) {
         String normalized = phoneNumber.replaceAll("[^\\d+]", "");
-        log.debug("Normalizing phone number. input={}, intermediate={}", phoneNumber, normalized);
+        log.debug("Normalizing phone number. input={}, intermediate={}",
+                LogMaskingUtil.mask("phoneNumber", phoneNumber), LogMaskingUtil.mask("phoneNumber", normalized));
 
         if (normalized.startsWith("+")) {
             normalized = normalized.substring(1);
         }
-        log.info("Phone number normalized. normalized={}", normalized);
+        // Bare 10-digit Indian mobiles need the 91 country code for WhatsApp delivery.
+        if (normalized.matches(com.apollo.elevator.common.validation.IndianFormats.MOBILE)) {
+            normalized = "91" + normalized;
+        }
+        log.info("Phone number normalized. normalized={}", LogMaskingUtil.mask("phoneNumber", normalized));
 
         return normalized;
     }

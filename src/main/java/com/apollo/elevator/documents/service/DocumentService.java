@@ -2,6 +2,7 @@ package com.apollo.elevator.documents.service;
 
 import com.apollo.elevator.common.exception.InvalidGstPercentageException;
 import com.apollo.elevator.common.exception.ResourceNotFoundException;
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import com.apollo.elevator.common.exception.UnsupportedDocumentTypeException;
 import com.apollo.elevator.customer.model.entity.AmcContract;
 import com.apollo.elevator.customer.model.entity.Customer;
@@ -71,10 +72,34 @@ public class DocumentService {
      */
     public PdfResult generateBillPdf(DocumentType documentType, BillRequest billRequest) {
         validateDocumentType(documentType);
+        return generateBillPdf(billRequest, "pdf/gst-bill", Map.of());
+    }
+
+    /** Taxable (before-tax), GST and grand-total amounts of a bill, computed exactly as printed on the PDF. */
+    public record BillTotals(BigDecimal taxableAmount, BigDecimal gstAmount, BigDecimal totalAmount) {}
+
+    public BillTotals computeBillTotals(BillRequest billRequest) {
+        validateBillRequest(billRequest);
+        double gstPercentage = validateAndNormalizeGstPercentage(billRequest.bill().gstPercentage());
+        BigDecimal taxable = sumLineItemAmounts(normalizeLineItems(billRequest.lineItems()));
+        BigDecimal gst = taxable.multiply(BigDecimal.valueOf(gstPercentage)).divide(ONE_HUNDRED, MONEY_SCALE, RoundingMode.HALF_UP);
+        BigDecimal half = gst.divide(BigDecimal.valueOf(2), MONEY_SCALE, RoundingMode.HALF_UP);
+        BigDecimal roundedGst = half.add(gst.subtract(half));
+        return new BillTotals(taxable, roundedGst, taxable.add(roundedGst).setScale(MONEY_SCALE, RoundingMode.HALF_UP));
+    }
+
+    /**
+     * Renders a GST bill using the given Thymeleaf template; {@code extraVariables} are
+     * added on top of the standard bill variables (e.g. instalment details).
+     */
+    public PdfResult generateBillPdf(BillRequest billRequest, String templateName, Map<String, Object> extraVariables) {
         validateBillRequest(billRequest);
 
         Map<String, Object> variables = buildBillTemplateVariables(billRequest);
-        byte[] pdfBytes = pdfTemplateService.renderToPdf("pdf/gst-bill", variables);
+        if (extraVariables != null) {
+            variables.putAll(extraVariables);
+        }
+        byte[] pdfBytes = pdfTemplateService.renderToPdf(templateName, variables);
 
         String entityPrefix = billRequest.entity() == BillRequest.BillingEntity.APOLLO_ELEVATOR
                 ? "apollo_elevator" : "apollo_elevator_services";
@@ -171,6 +196,22 @@ public class DocumentService {
         return new BillRequest(entity, billDetails, billTo, lineItems);
     }
 
+    /**
+     * Builds a GST bill payload for the customer with Apollo's standard seller details,
+     * today's invoice date, 18% GST and the given line items.
+     */
+    public BillRequest buildBillRequest(Customer customer, String invoiceNumber, List<BillRequest.BillLineItem> lineItems) {
+        BillRequest base = mapAmcToBillRequest(customer, new AmcContract());
+        BillRequest.BillDetails d = base.bill();
+        BillRequest.BillDetails details = new BillRequest.BillDetails(invoiceNumber, d.invoiceDate(), d.state(), d.pincode(),
+                d.mobile(), d.panNumber(), d.gstin(), d.gstPercentage(), d.sgstPercentage(), d.cgstPercentage());
+        return new BillRequest(base.entity(), details, base.billTo(), lineItems);
+    }
+
+    public static String formatBillDate(LocalDate date) {
+        return date == null ? "" : date.format(DATE_FMT);
+    }
+
     private List<BillRequest.BillLineItem> buildBillLineItems(AmcContract amc, boolean isGst) {
         double baseAmount = amc.getAmcAmount() != null ? amc.getAmcAmount().doubleValue() : 0.0;
 
@@ -219,13 +260,15 @@ public class DocumentService {
     private Map<String, Object> buildBillTemplateVariables(BillRequest req) {
         Map<String, Object> vars = new HashMap<>();
         double gstPercentage = validateAndNormalizeGstPercentage(req.bill().gstPercentage());
-        BigDecimal taxableAmount = sumLineItemAmounts(req.lineItems());
+        List<BillRequest.BillLineItem> lineItems = normalizeLineItems(req.lineItems());
+        BigDecimal taxableAmount = sumLineItemAmounts(lineItems);
         BigDecimal gstAmount = taxableAmount.multiply(BigDecimal.valueOf(gstPercentage)).divide(ONE_HUNDRED, MONEY_SCALE, RoundingMode.HALF_UP);
         BigDecimal sgstAmount = gstAmount.divide(BigDecimal.valueOf(2), MONEY_SCALE, RoundingMode.HALF_UP);
         BigDecimal cgstAmount = gstAmount.subtract(sgstAmount);
         BigDecimal totalAfterTax = taxableAmount.add(sgstAmount).add(cgstAmount).setScale(MONEY_SCALE, RoundingMode.HALF_UP);
         BigDecimal totalBeforeTax = taxableAmount.setScale(MONEY_SCALE, RoundingMode.HALF_UP);
 
+        double halfRate = gstPercentage / 2.0;
         BillRequest.BillDetails adjustedBill = new BillRequest.BillDetails(
                 req.bill().invoiceNumber(),
                 req.bill().invoiceDate(),
@@ -235,13 +278,14 @@ public class DocumentService {
                 req.bill().panNumber(),
                 req.bill().gstin(),
                 gstPercentage,
-                sgstAmount.doubleValue(),
-                cgstAmount.doubleValue()
+                halfRate,
+                halfRate
         );
 
         vars.put("bill", adjustedBill);
         vars.put("billTo", req.billTo());
-        vars.put("lineItems", req.lineItems() != null ? req.lineItems() : List.of());
+        vars.put("lineItems", lineItems);
+        vars.put("halfGstRateLabel", formatRate(halfRate) + "%");
         vars.put("entity", req.entity());
         vars.put("isGstBill", true);
         vars.put("generatedDate", LocalDate.now().format(DISPLAY_DATE_FMT));
@@ -319,6 +363,47 @@ public class DocumentService {
         return gstPercentage;
     }
 
+    /**
+     * Drops empty rows, renumbers Sl. No. sequentially and recomputes each amount as
+     * quantity x rate so the PDF totals can never disagree with the line items.
+     * When quantity is not numeric or rate is missing, the supplied amount is kept.
+     */
+    List<BillRequest.BillLineItem> normalizeLineItems(List<BillRequest.BillLineItem> lineItems) {
+        if (lineItems == null) {
+            return List.of();
+        }
+        List<BillRequest.BillLineItem> result = new java.util.ArrayList<>();
+        for (BillRequest.BillLineItem item : lineItems) {
+            if (item == null) {
+                continue;
+            }
+            Double amount = item.amount();
+            BigDecimal quantity = parseQuantity(item.quantity());
+            if (quantity != null && item.rate() != null) {
+                amount = quantity.multiply(BigDecimal.valueOf(item.rate()))
+                        .setScale(MONEY_SCALE, RoundingMode.HALF_UP).doubleValue();
+            }
+            result.add(new BillRequest.BillLineItem(result.size() + 1, item.description(), item.hsnCode(),
+                    item.quantity(), item.rate(), amount));
+        }
+        return result;
+    }
+
+    private BigDecimal parseQuantity(String quantity) {
+        if (quantity == null || quantity.isBlank()) {
+            return null;
+        }
+        try {
+            return new BigDecimal(leadingNumericToken(quantity));
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private static String formatRate(double rate) {
+        return BigDecimal.valueOf(rate).stripTrailingZeros().toPlainString();
+    }
+
     private BigDecimal sumLineItemAmounts(List<BillRequest.BillLineItem> lineItems) {
         BigDecimal total = BigDecimal.ZERO;
         if (lineItems == null) {
@@ -380,11 +465,36 @@ public class DocumentService {
         LocalDate documentDate = amc.getStartDate() != null ? amc.getStartDate()
                 : amc.getEndDate() != null ? amc.getEndDate() : LocalDate.now();
 
-        log.info("Building PDF for contractNumber={}, fileName={}", amc.getContractNumber(), fileName);
+        log.info("Building PDF for contractNumber={}, fileName={}",
+                amc.getContractNumber(), LogMaskingUtil.mask("fileName", fileName));
         Map<String, Object> variables = buildTemplateVariables(customer, lift, amc);
         byte[] pdfBytes = pdfTemplateService.renderToPdf("pdf/amc-contract", variables);
-        log.info("AMC contract PDF result ready. fileName={}, sizeBytes={}", fileName, pdfBytes.length);
+        log.info("AMC contract PDF result ready. fileName={}, sizeBytes={}",
+                LogMaskingUtil.mask("fileName", fileName), pdfBytes.length);
         return new AmcContractPdfResult(pdfBytes, fileName, documentDate);
+    }
+
+    /** Generates the PDF for one specific AMC contract of the customer (any lift, any status). */
+    @Transactional(readOnly = true)
+    public AmcContractPdfResult generateAmcContractPdfResult(Long customerId, Long amcContractId) {
+        log.info("Generating AMC contract PDF for contract. customerId={}, amcContractId={}", customerId, amcContractId);
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + customerId));
+        for (Lift lift : customer.getLifts()) {
+            for (AmcContract amc : lift.getAmcContracts()) {
+                if (amcContractId.equals(amc.getId())) {
+                    String suffix = amc.getContractNumber() != null ? sanitize(amc.getContractNumber()) : String.valueOf(amc.getId());
+                    String fileName = customer.getCustomerCode() + "_apollo_amc_" + resolveAmcYear(amc) + "_" + suffix + ".pdf";
+                    LocalDate documentDate = amc.getStartDate() != null ? amc.getStartDate()
+                            : amc.getEndDate() != null ? amc.getEndDate() : LocalDate.now();
+                    byte[] pdfBytes = pdfTemplateService.renderToPdf("pdf/amc-contract", buildTemplateVariables(customer, lift, amc));
+                    log.info("AMC contract PDF ready. fileName={}, sizeBytes={}",
+                            LogMaskingUtil.mask("fileName", fileName), pdfBytes.length);
+                    return new AmcContractPdfResult(pdfBytes, fileName, documentDate);
+                }
+            }
+        }
+        throw new ResourceNotFoundException("AMC contract " + amcContractId + " not found for customer " + customerId);
     }
 
     /**

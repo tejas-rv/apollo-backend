@@ -1,8 +1,10 @@
 package com.apollo.elevator.notification.whatsapp.service;
 
 import com.apollo.elevator.common.exception.NotificationDeliveryException;
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -16,6 +18,7 @@ import org.springframework.web.client.RestClientResponseException;
 import java.util.List;
 
 @Component
+@Profile("!dev")
 @RequiredArgsConstructor
 @Slf4j
 public class MetaWhatsAppClient implements WhatsAppClient {
@@ -27,7 +30,7 @@ public class MetaWhatsAppClient implements WhatsAppClient {
     public WhatsAppDeliveryResult sendText(String phoneNumber, String message) {
         log.info(
                 "Meta WhatsApp send invoked. phoneNumber={}, messageLength={}",
-                phoneNumber,
+                LogMaskingUtil.mask("phoneNumber", phoneNumber),
                 message == null ? 0 : message.length()
         );
         validateConfiguration();
@@ -35,7 +38,7 @@ public class MetaWhatsAppClient implements WhatsAppClient {
                 "Meta WhatsApp configuration validated. baseUrl={}, apiVersion={}, phoneNumberId={}",
                 whatsAppProperties.getBaseUrl(),
                 whatsAppProperties.getApiVersion(),
-                whatsAppProperties.getPhoneNumberId()
+                LogMaskingUtil.mask("phoneNumberId", whatsAppProperties.getPhoneNumberId())
         );
 
         RestClient restClient = restClientBuilder
@@ -70,15 +73,14 @@ public class MetaWhatsAppClient implements WhatsAppClient {
             log.error(
                     "Meta WhatsApp provider rejected request. statusCode={}, responseBody={}",
                     exception.getStatusCode(),
-                    exception.getResponseBodyAsString(),
-                    exception
+                    LogMaskingUtil.mask("responseBody", exception.getResponseBodyAsString())
             );
             throw new NotificationDeliveryException(
                     "WhatsApp provider rejected the request: " + exception.getResponseBodyAsString(),
                     exception
             );
         } catch (RestClientException exception) {
-            log.error("Meta WhatsApp provider call failed", exception);
+            log.error("Meta WhatsApp provider call failed. errorType={}", exception.getClass().getSimpleName());
             throw new NotificationDeliveryException("Failed to call the WhatsApp provider", exception);
         }
     }
@@ -96,8 +98,8 @@ public class MetaWhatsAppClient implements WhatsAppClient {
         }
         log.info(
                 "Meta WhatsApp document send invoked. phoneNumber={}, fileName={}, contentSize={}",
-                phoneNumber,
-                fileName,
+                LogMaskingUtil.mask("phoneNumber", phoneNumber),
+                LogMaskingUtil.mask("fileName", fileName),
                 content.length
         );
 
@@ -133,15 +135,14 @@ public class MetaWhatsAppClient implements WhatsAppClient {
             log.error(
                     "Meta WhatsApp document request rejected. statusCode={}, responseBody={}",
                     exception.getStatusCode(),
-                    exception.getResponseBodyAsString(),
-                    exception
+                    LogMaskingUtil.mask("responseBody", exception.getResponseBodyAsString())
             );
             throw new NotificationDeliveryException(
                     "WhatsApp provider rejected the document request: " + exception.getResponseBodyAsString(),
                     exception
             );
         } catch (RestClientException exception) {
-            log.error("Meta WhatsApp document call failed", exception);
+            log.error("Meta WhatsApp document call failed. errorType={}", exception.getClass().getSimpleName());
             throw new NotificationDeliveryException("Failed to call the WhatsApp provider for document", exception);
         }
     }

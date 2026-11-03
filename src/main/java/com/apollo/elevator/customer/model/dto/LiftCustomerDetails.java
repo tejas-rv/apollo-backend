@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import com.apollo.elevator.common.validation.IndianFormats;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,26 +29,26 @@ public class LiftCustomerDetails {
     private String customerName;
 
     @NotBlank(message = "Mobile number is required")
-    @Pattern(
-            regexp = "^[6-9]\\d{9}$",
-            message = "Invalid mobile number"
-    )
+    @Pattern(regexp = IndianFormats.MOBILE, message = "Mobile number " + IndianFormats.MOBILE_MESSAGE)
     private String mobileNumber;
 
-    @Email(message = "Invalid email address")
+    @Email(regexp = IndianFormats.EMAIL, message = "Invalid email address")
     @Size(max = 150, message = "Email must not exceed 150 characters")
     private String email;
 
     @Size(max = 500, message = "Address must not exceed 500 characters")
+    @Pattern(regexp = IndianFormats.OPTIONAL_ADDRESS, message = "Address " + IndianFormats.ADDRESS_MESSAGE)
     private String address;
 
     @Size(max = 100, message = "City must not exceed 100 characters")
+    @Pattern(regexp = IndianFormats.NAME, message = "City " + IndianFormats.NAME_MESSAGE)
     private String city;
 
     @Size(max = 100, message = "State must not exceed 100 characters")
+    @Pattern(regexp = IndianFormats.NAME, message = "State " + IndianFormats.NAME_MESSAGE)
     private String state;
 
-    @Size(max = 6, message = "Pincode must not exceed 6 characters")
+    @Pattern(regexp = IndianFormats.OPTIONAL_PINCODE, message = "Pincode " + IndianFormats.PINCODE_MESSAGE)
     private String pincode;
 
     @Valid

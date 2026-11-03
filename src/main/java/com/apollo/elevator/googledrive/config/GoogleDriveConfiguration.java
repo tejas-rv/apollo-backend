@@ -1,6 +1,7 @@
 package com.apollo.elevator.googledrive.config;
 
 import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.auth.oauth2.TokenResponseException;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
@@ -47,25 +48,67 @@ public class GoogleDriveConfiguration {
 
     @Bean
     public Drive googleDriveClient(GoogleDriveProperties properties) {
+        log.info(
+                "Google Drive client initialization started. applicationName={}, folderIdConfigured={}, "
+                        + "oauthClientPathConfigured={}, tokenDirectoryConfigured={}",
+                properties.getApplicationName(),
+                StringUtils.hasText(properties.getFolderId()),
+                StringUtils.hasText(properties.getOauthClientPath()),
+                StringUtils.hasText(properties.getTokenDirectory())
+        );
         validateProperties(properties);
 
         try {
+            log.debug("Creating Google Drive HTTP transport and OAuth client.");
             NetHttpTransport transport = GoogleNetHttpTransport.newTrustedTransport();
             JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
-            Credential credential = authorize(properties, transport, jsonFactory);
-
-            Drive drive = new Drive.Builder(transport, jsonFactory, credential)
-                    .setApplicationName(properties.getApplicationName())
-                    .build();
-
-            validateConfiguredFolder(drive, properties.getFolderId());
+            Drive drive = buildDrive(properties, transport, jsonFactory, false);
+            try {
+                validateConfiguredFolder(drive, properties.getFolderId());
+            } catch (IllegalStateException exception) {
+                if (!isInvalidGrant(exception)) {
+                    throw exception;
+                }
+                log.warn("Stored Google Drive token was rejected (expired or revoked). "
+                        + "Discarding it and re-authorizing; complete the consent screen in the browser.");
+                drive = buildDrive(properties, transport, jsonFactory, true);
+                validateConfiguredFolder(drive, properties.getFolderId());
+            }
+            log.info("Google Drive client initialized and configured folder validated.");
             return drive;
         } catch (IllegalStateException exception) {
+            log.error("Google Drive client initialization failed. errorType={}",
+                    exception.getClass().getSimpleName());
             throw exception;
         } catch (IOException | GeneralSecurityException exception) {
+            log.error("Google Drive client initialization failed. errorType={}",
+                    exception.getClass().getSimpleName());
             throw new IllegalStateException(
                     "Unable to initialize Google Drive. Check the configured OAuth client credentials.", exception);
         }
+    }
+
+    private Drive buildDrive(
+            GoogleDriveProperties properties,
+            NetHttpTransport transport,
+            JsonFactory jsonFactory,
+            boolean discardStoredToken
+    ) throws IOException {
+        Credential credential = authorize(properties, transport, jsonFactory, discardStoredToken);
+        return new Drive.Builder(transport, jsonFactory, credential)
+                .setApplicationName(properties.getApplicationName())
+                .build();
+    }
+
+    private static boolean isInvalidGrant(Throwable throwable) {
+        for (Throwable cause = throwable; cause != null; cause = cause.getCause()) {
+            if (cause instanceof TokenResponseException tokenError
+                    && tokenError.getDetails() != null
+                    && "invalid_grant".equals(tokenError.getDetails().getError())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -77,9 +120,12 @@ public class GoogleDriveConfiguration {
     private Credential authorize(
             GoogleDriveProperties properties,
             NetHttpTransport transport,
-            JsonFactory jsonFactory
+            JsonFactory jsonFactory,
+            boolean discardStoredToken
     ) throws IOException {
         Path tokenDirectory = Path.of(properties.getTokenDirectory());
+        log.debug("Preparing Google Drive token directory. directoryConfigured={}, directoryExists={}",
+                true, Files.isDirectory(tokenDirectory));
         try {
             Files.createDirectories(tokenDirectory);
         } catch (IOException exception) {
@@ -100,6 +146,9 @@ public class GoogleDriveConfiguration {
                 .setDataStoreFactory(dataStoreFactory)
                 .setAccessType("offline")
                 .build();
+        if (discardStoredToken) {
+            flow.getCredentialDataStore().delete(AUTHORIZED_USER_ID);
+        }
 
         Credential credential = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver())
                 .authorize(AUTHORIZED_USER_ID);
@@ -130,11 +179,18 @@ public class GoogleDriveConfiguration {
 
         try {
             Path oauthClientPath = Path.of(properties.getOauthClientPath());
-            if (!Files.isRegularFile(oauthClientPath) || !Files.isReadable(oauthClientPath)) {
+            boolean exists = Files.isRegularFile(oauthClientPath);
+            boolean readable = Files.isReadable(oauthClientPath);
+            log.debug("Google Drive OAuth client file check. path={}, exists={}, readable={}",
+                    oauthClientPath, exists, readable);
+            if (!exists || !readable) {
+                log.error("Google Drive OAuth client file is unavailable. path={}, exists={}, readable={}",
+                        oauthClientPath, exists, readable);
                 throw new IllegalStateException(
                         "Google Drive OAuth client JSON does not exist or is not readable: " + oauthClientPath);
             }
         } catch (InvalidPathException exception) {
+            log.error("Google Drive OAuth client path is invalid.");
             throw new IllegalStateException("google.drive.oauth-client-path is invalid", exception);
         }
 

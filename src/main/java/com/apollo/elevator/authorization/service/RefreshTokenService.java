@@ -2,6 +2,7 @@ package com.apollo.elevator.authorization.service;
 
 import com.apollo.elevator.authorization.model.entity.RefreshToken;
 import com.apollo.elevator.common.exception.UnauthorizedException;
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import com.apollo.elevator.authorization.repository.RefreshTokenRepository;
 import com.apollo.elevator.securityconfiguration.service.SecurityConfigService;
 import com.apollo.elevator.authorization.model.entity.User;
@@ -34,7 +35,7 @@ public class RefreshTokenService {
         log.info(
                 "Issuing refresh token. userId={}, username={}, expiresAt={}",
                 user.getId(),
-                user.getUsername(),
+                LogMaskingUtil.mask("username", user.getUsername()),
                 expiry
         );
 
@@ -53,7 +54,7 @@ public class RefreshTokenService {
     @Transactional
     public User rotate(String plainToken) {
         String tokenHash = hashToken(plainToken);
-        log.info("Rotating refresh token. tokenHashPrefix={}", tokenHash.substring(0, 8));
+        log.info("Rotating refresh token.");
         RefreshToken refreshToken = refreshTokenRepository.findByTokenHash(tokenHash)
                 .orElseThrow(() -> new UnauthorizedException("Refresh token is invalid"));
 
@@ -85,7 +86,7 @@ public class RefreshTokenService {
         log.info(
                 "Revoking all active refresh tokens. userId={}, username={}, activeTokenCount={}",
                 user.getId(),
-                user.getUsername(),
+                LogMaskingUtil.mask("username", user.getUsername()),
                 activeTokens.size()
         );
 

@@ -1,5 +1,6 @@
 package com.apollo.elevator.quotation.service;
 
+import com.apollo.elevator.common.util.LogMaskingUtil;
 import com.apollo.elevator.common.exception.ConflictException;
 import com.apollo.elevator.common.exception.ResourceNotFoundException;
 import com.apollo.elevator.enquiry.model.entity.ContactInquiry;
@@ -37,7 +38,8 @@ public class QuotationService {
         String normalizedQuery = query == null ? null : query.trim();
 
         log.info("Listing quotations. status={}, enquiryStatus={}, query='{}', page={}, size={}",
-                quotationStatus, inquiryStatus, normalizedQuery, pageable.getPageNumber(), pageable.getPageSize());
+                quotationStatus, inquiryStatus, LogMaskingUtil.mask("query", normalizedQuery),
+                pageable.getPageNumber(), pageable.getPageSize());
 
         return quotationRepository.search(quotationStatus, inquiryStatus, normalizedQuery, pageable)
                 .map(this::toResponse);
@@ -91,10 +93,13 @@ public class QuotationService {
         try {
             Quotation savedQuotation = quotationRepository.saveAndFlush(quotation);
             log.info("Quotation created. quotationId={}, quotationNumber={}, enquiryId={}, createdBy={}",
-                    savedQuotation.getId(), savedQuotation.getQuotationNumber(), enquiry.getId(), createdBy);
+                    savedQuotation.getId(), savedQuotation.getQuotationNumber(), enquiry.getId(),
+                    LogMaskingUtil.mask("username", createdBy));
             return toResponse(savedQuotation);
         } catch (DataIntegrityViolationException exception) {
-            log.warn("Duplicate quotation number encountered while creating quotation for enquiryId={}. Retrying generation.", enquiry.getId(), exception);
+            log.warn("Duplicate quotation number encountered while creating quotation for enquiryId={}. "
+                    + "Retrying generation. errorType={}",
+                    enquiry.getId(), exception.getClass().getSimpleName());
             String retryNumber = generateQuotationNumber();
             Quotation retryQuotation = Quotation.builder()
                     .quotationNumber(retryNumber)
@@ -107,7 +112,8 @@ public class QuotationService {
                     .build();
             Quotation saved = quotationRepository.save(retryQuotation);
             log.info("Quotation created after retry. quotationId={}, quotationNumber={}, enquiryId={}, createdBy={}",
-                    saved.getId(), saved.getQuotationNumber(), enquiry.getId(), createdBy);
+                    saved.getId(), saved.getQuotationNumber(), enquiry.getId(),
+                    LogMaskingUtil.mask("username", createdBy));
             return toResponse(saved);
         }
     }
@@ -126,7 +132,8 @@ public class QuotationService {
         quotation.setUpdatedBy(updatedBy);
         quotation = quotationRepository.save(quotation);
 
-        log.info("Quotation status updated. quotationId={}, status={}, updatedBy={}", quotation.getId(), quotation.getStatus(), updatedBy);
+        log.info("Quotation status updated. quotationId={}, status={}, updatedBy={}",
+                quotation.getId(), quotation.getStatus(), LogMaskingUtil.mask("username", updatedBy));
         return toResponse(quotation);
     }
 
